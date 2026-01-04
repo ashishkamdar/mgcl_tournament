@@ -1,0 +1,13 @@
+<h1>MGCL Championship Leaderboard</h1>
+<table border="1">
+<tr><th>Team</th><th>Points</th><th>🥇</th><th>🥈</th><th>🥉</th></tr>
+{% for s in standings %}
+<tr>
+<td>{{ s.team }}</td>
+<td>{{ s.total_points }}</td>
+<td>{{ s.gold }}</td>
+<td>{{ s.silver }}</td>
+<td>{{ s.bronze }}</td>
+</tr>
+{% endfor %}
+</table>

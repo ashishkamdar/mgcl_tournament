@@ -1,0 +1,14 @@
+<h1>Match Fixtures</h1>
+<table border="1">
+<tr><th>Event</th><th>Match</th><th>Teams</th><th>Date</th><th>Time</th><th>Status</th></tr>
+{% for m in matches %}
+<tr>
+<td>{{ m.event }}</td>
+<td>{{ m.match_no }}</td>
+<td>{{ m.team1 }} vs {{ m.team2 }}</td>
+<td>{{ m.date }}</td>
+<td>{{ m.time }}</td>
+<td>{{ "Done" if m.completed else "Pending" }}</td>
+</tr>
+{% endfor %}
+</table>
