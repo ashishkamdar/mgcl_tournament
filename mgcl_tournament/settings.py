@@ -72,6 +72,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+STATICFILES_DIRS = [
+    BASE_DIR / "team_icons",
+    BASE_DIR / "event_logos",
+]
+
 # Static & Media Files Configuration
 STATIC_URL = 'static/'
 # This tells Django where to collect files for Nginx
