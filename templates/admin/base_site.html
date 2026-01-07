@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <img src="{% static 'team_icons/mgcl_logo.png' %}" height="40px" style="vertical-align: middle; margin-right: 10px;">
+        MGCL 2026 Admin
+    </a>
+</h1>
+{% endblock %}

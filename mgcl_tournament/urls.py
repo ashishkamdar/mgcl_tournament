@@ -5,6 +5,10 @@ from tournament import views
 from django.conf import settings
 from django.conf.urls.static import static
 
+admin.site.site_header = "MGCL 2026 Administration"
+admin.site.site_title = "MGCL Admin Portal"
+admin.site.index_title = "Tournament Management"
+
 urlpatterns = [
     # --- ROOT REDIRECT ---
     # This ensures that mgcl.areakpi.in leads directly to your branding/gateway page
