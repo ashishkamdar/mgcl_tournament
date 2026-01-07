@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DEBUG: Match Not Ready</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; background: #f4f4f4; }
+        .debug-box { background: #fff; border: 2px solid #e74c3c; padding: 20px; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f8f8f8; }
+        .status-red { color: red; font-weight: bold; }
+        .status-green { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="debug-box">
+    <h1>⚠️ DEBUG: Match #{{ match.match_no }} Not Ready</h1>
+    
+    <h3>Database State:</h3>
+    <table>
+        <tr><th>Field</th><th>Value</th><th>Status</th></tr>
+        <tr>
+            <td>Team 1 Object</td>
+            <td>{{ match.team1 }}</td>
+            <td class="{% if match.team1 %}status-green{% else %}status-red{% endif %}">
+                {% if match.team1 %}OK{% else %}MISSING (NULL){% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>Team 2 Object</td>
+            <td>{{ match.team2 }}</td>
+            <td class="{% if match.team2 %}status-green{% else %}status-red{% endif %}">
+                {% if match.team2 %}OK{% else %}MISSING (NULL){% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>Opponent Rule</td>
+            <td>"{{ match.opponent_rule }}"</td>
+            <td>Raw Text</td>
+        </tr>
+        <tr>
+            <td>Match Type</td>
+            <td>"{{ match.match_type }}"</td>
+            <td>Label</td>
+        </tr>
+    </table>
+
+    <p><b>System Reason:</b> {{ reason }}</p>
+</div>
+
+<br>
+<a href="{% url 'fixtures' %}">← Back to Fixtures</a>
+</body>
+</html>

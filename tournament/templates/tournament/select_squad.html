@@ -1,0 +1,73 @@
+{% extends "tournament/base.html" %}
+
+{% block content %}
+<div class="board" style="max-width: 600px; margin: 40px auto; color: white;">
+    
+    <a href="{% url 'captain_dashboard' %}" style="color: #94a3b8; text-decoration: none;">&larr; Back to Dashboard</a>
+    
+    <h1 style="margin-top: 20px;">Select Squad</h1>
+    <h3 style="color: #3b82f6;">{{ match.event.sport.name }} - {{ match.event.name }}</h3>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div style="background: #ef4444; padding: 15px; border-radius: 8px; margin: 10px 0; font-weight: 700;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <p style="opacity: 0.8;">Please select <b>{{ req_count }}</b> player(s) for this match.</p>
+
+    <form id="squadForm" method="POST" style="margin-top: 30px;">
+        {% csrf_token %}
+        
+        <div style="display: grid; gap: 10px;">
+        {% for p in roster %}
+            <label style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="players" value="{{ p.id }}" class="player-checkbox"
+                       style="transform: scale(1.5); margin-right: 15px;"
+                       {% if p.name in current_squad %}checked{% endif %}>
+                <span style="font-size: 18px; font-weight: 600;">{{ p.name }}</span>
+            </label>
+        {% empty %}
+            <p>No players found for this sport in your roster.</p>
+        {% endfor %}
+        </div>
+
+        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <label style="display: block; margin-bottom: 10px; font-weight: 700; color: #94a3b8;">Guest / Substitute Member:</label>
+            <input type="text" id="guestName" name="guest_name" placeholder="Enter name (e.g. Rahul - Guest)" 
+                   style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #3b82f6; background: rgba(0,0,0,0.2); color: white; font-size: 16px;">
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%; padding: 15px; font-size: 18px; margin-top: 30px;">
+            Confirm Squad
+        </button>
+    </form>
+</div>
+
+<script>
+    const limit = {{ req_count }};
+    const checkboxes = document.querySelectorAll('.player-checkbox');
+    const guestInput = document.getElementById('guestName');
+
+    function updateLimits() {
+        const checkedCount = document.querySelectorAll('.player-checkbox:checked').length;
+        const guestCount = guestInput.value.trim() !== "" ? 1 : 0;
+        const total = checkedCount + guestCount;
+
+        checkboxes.forEach(cb => {
+            if (!cb.checked) {
+                cb.disabled = (total >= limit);
+                cb.parentElement.style.opacity = (total >= limit) ? "0.5" : "1";
+            }
+        });
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateLimits));
+    guestInput.addEventListener('input', updateLimits);
+    
+    // Run on page load
+    window.onload = updateLimits;
+</script>
+{% endblock %}

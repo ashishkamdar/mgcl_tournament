@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Enter Match Score</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* ... (Keep existing CSS variables and Dark Mode styles) ... */
+:root {
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --input-bg: #f1f5f9;
+  --input-border: #cbd5e1;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+body.dark {
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+  --card-bg: rgba(15, 23, 42, 0.8);
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --input-bg: #1e293b;
+  --input-border: #334155;
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+* { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; transition: 0.3s; }
+body { margin: 0; min-height: 100vh; background: var(--bg-gradient); background-attachment: fixed; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.score-card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 100%; max-width: 600px; text-align: center; position: relative; }
+h1 { font-size: 24px; font-weight: 900; text-transform: uppercase; color: var(--accent); margin: 0 0 10px 0; }
+h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin: 0 0 30px 0; }
+.matchup { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; }
+.team-name { font-size: 18px; font-weight: 700; flex: 1; word-wrap: break-word; }
+.vs-badge { background: var(--accent); color: white; font-weight: 900; font-size: 12px; padding: 8px; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px var(--accent); }
+
+/* Form Elements */
+.input-section { margin-bottom: 25px; }
+.input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; text-align: left; }
+.player-input { width: 100%; padding: 10px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-main); font-size: 14px; }
+
+.score-row { display: flex; justify-content: space-between; gap: 20px; margin-top: 10px; }
+.score-box { flex: 1; }
+.score-input { background: var(--input-bg); border: 2px solid var(--input-border); color: var(--text-main); font-family: 'Courier New', monospace; font-size: 42px; font-weight: 800; text-align: center; padding: 15px 0; border-radius: 8px; width: 100%; outline: none; }
+.score-input:focus, .player-input:focus { border-color: var(--accent); }
+label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+
+.save-btn { background: var(--accent); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-radius: 8px; cursor: pointer; width: 100%; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
+.save-btn:hover { transform: translateY(-2px); filter: brightness(110%); }
+.back-link { display: inline-block; margin-top: 25px; color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; border: 1px solid var(--input-border); padding: 8px 16px; border-radius: 50px; }
+.back-link:hover { background: var(--input-bg); color: var(--text-main); }
+.theme-toggle { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+</style>
+</head>
+
+<body class="dark">
+
+<div class="score-card">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">🌗</button>
+
+    <h1>Match Result</h1>
+    <h3>{{ match.event }}</h3>
+
+    <div class="matchup">
+        <div class="team-name" style="text-align: right;">{{ team1_name }}</div>
+        <div class="vs-badge">VS</div>
+        <div class="team-name" style="text-align: left;">{{ team2_name }}</div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="input-section">
+            
+            <div style="display:flex; gap:20px;">
+                <div style="flex:1;">
+                    <label style="display:block; margin-bottom:5px;">{{ team1_name }} Players</label>
+                    <input type="text" name="team1_players" class="player-input" 
+                           placeholder="Enter {{ match.player_count_hint }} Name(s)"
+                           value="{{ match.team1_players|default_if_none:'' }}">
+                    
+                    <div style="margin-top:10px;">
+                        <input type="number" name="team1_score" class="score-input" required placeholder="0"
+                               value="{{ match.team1_score|default_if_none:'' }}">
+                    </div>
+                </div>
+
+                <div style="flex:1;">
+                    <label style="display:block; margin-bottom:5px;">{{ team2_name }} Players</label>
+                    <input type="text" name="team2_players" class="player-input" 
+                           placeholder="Enter {{ match.player_count_hint }} Name(s)"
+                           value="{{ match.team2_players|default_if_none:'' }}">
+                    
+                    <div style="margin-top:10px;">
+                        <input type="number" name="team2_score" class="score-input" required placeholder="0"
+                               value="{{ match.team2_score|default_if_none:'' }}">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <button type="submit" class="save-btn">Update Standings</button>
+    </form>
+
+    <a href="{% url 'fixtures' %}" class="back-link">← Cancel & Return</a>
+</div>
+
+<script>
+function toggleTheme() {
+  const body = document.body;
+  body.classList.toggle("dark");
+  localStorage.setItem("mgcl-theme", body.classList.contains("dark") ? "dark" : "light");
+}
+window.onload = () => {
+  const savedTheme = localStorage.getItem("mgcl-theme");
+  if (savedTheme === "light") { document.body.classList.remove("dark"); } 
+  else { if (!document.body.classList.contains("dark")) { document.body.classList.add("dark"); } }
+};
+</script>
+
+</body>
+</html>

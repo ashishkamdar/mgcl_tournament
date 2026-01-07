@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Swimming Race Results</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+  --card-bg: rgba(15, 23, 42, 0.9);
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --accent: #06b6d4; /* Cyan for swimming */
+  --input-bg: #1e293b;
+  --border: #334155;
+}
+
+* { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+body { margin: 0; min-height: 100vh; background: var(--bg-gradient); color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+.card {
+  background: var(--card-bg);
+  padding: 40px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  text-align: center;
+}
+
+h1 { color: var(--accent); text-transform: uppercase; margin: 0 0 10px 0; font-size: 24px; letter-spacing: 1px; }
+h3 { color: var(--text-muted); font-size: 14px; text-transform: uppercase; margin: 0 0 30px 0; }
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: 0.2s;
+}
+
+.rank-row:focus-within { border-color: var(--accent); background: rgba(6, 182, 212, 0.1); }
+
+.position-badge {
+  background: var(--accent);
+  color: #000;
+  font-weight: 800;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  font-size: 14px;
+}
+
+select {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  outline: none;
+  cursor: pointer;
+}
+
+select option { background: #0f172a; }
+
+.save-btn {
+  background: var(--accent);
+  color: #000;
+  font-weight: 800;
+  border: none;
+  padding: 15px;
+  width: 100%;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.save-btn:hover { filter: brightness(110%); }
+
+.back-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+}
+.back-link:hover { color: white; }
+
+.error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Swimming Results</h1>
+    <h3>{{ match.event.name }}</h3>
+
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for i in "123456"|make_list %}
+        <div class="rank-row">
+            <div class="position-badge">{{ i }}</div>
+            <select name="rank_{{ i }}" required>
+                <option value="" disabled selected>Select Team...</option>
+                {% for team in teams %}
+                <option value="{{ team.id }}" 
+                    {% if existing and i == '1' and existing.first == team %}selected{% endif %}
+                    {% if existing and i == '2' and existing.second == team %}selected{% endif %}
+                    {% if existing and i == '3' and existing.third == team %}selected{% endif %}
+                    {% if existing and i == '4' and existing.fourth == team %}selected{% endif %}
+                    {% if existing and i == '5' and existing.fifth == team %}selected{% endif %}
+                    {% if existing and i == '6' and existing.sixth == team %}selected{% endif %}
+                >
+                    {{ team.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="save-btn">Save Results</button>
+    </form>
+
+    <a href="{% url 'fixtures' %}" class="back-link">← Cancel & Return</a>
+</div>
+
+</body>
+</html>

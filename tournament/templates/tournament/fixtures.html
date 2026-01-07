@@ -1,14 +1,565 @@
-<h1>Match Fixtures</h1>
-<table border="1">
-<tr><th>Event</th><th>Match</th><th>Teams</th><th>Date</th><th>Time</th><th>Status</th></tr>
-{% for m in matches %}
-<tr>
-<td>{{ m.event }}</td>
-<td>{{ m.match_no }}</td>
-<td>{{ m.team1 }} vs {{ m.team2 }}</td>
-<td>{{ m.date }}</td>
-<td>{{ m.time }}</td>
-<td>{{ "Done" if m.completed else "Pending" }}</td>
-</tr>
-{% endfor %}
-</table>
+{% load tournament_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MGCL Tournament Schedule</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* ===================== SHARED THEME VARIABLES ===================== */
+:root {
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
+  --header-text: #1e3a8a;
+  --row-bg: rgba(255, 255, 255, 0.9);
+  --row-hover: rgba(59, 130, 246, 0.15);
+  --accent-bg: #1e40af; 
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  --status-done: #059669;
+  --status-wait: #7c3aed;
+  --status-pending: #d97706;
+  --header-bg: rgba(255, 255, 255, 0.85); 
+}
+
+body.dark {
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+  --header-text: #ffffff;
+  --row-bg: rgba(30, 58, 138, 0.4);
+  --row-hover: rgba(59, 130, 246, 0.3);
+  --accent-bg: #0f172a;
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --status-done: #34d399;
+  --status-wait: #a78bfa;
+  --status-pending: #fbbf24;
+  --header-bg: rgba(15, 23, 42, 0.85);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-main);
+  padding: 0 20px 40px 20px;
+}
+
+.board {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ===================== STICKY HEADER & MENU ===================== */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--header-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  margin: 0 -20px 20px -20px; 
+  padding: 15px 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow);
+}
+
+.header-logo-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-logo {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
+}
+
+.header-container h1 {
+  font-size: clamp(20px, 4vw, 32px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--header-text);
+  margin: 0;
+}
+
+.nav-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ===================== FILTER BAR ===================== */
+.filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.filter-select {
+    background: var(--row-bg);
+    color: var(--text-main);
+    border: 1px solid var(--accent);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 150px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+}
+.filter-select:focus { outline: 2px solid var(--accent); }
+
+/* Buttons & Icons */
+.btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  text-transform: uppercase;
+  font-size: 11px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+.btn-secondary {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text-main);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.2); }
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+}
+.icon-btn:hover { transform: rotate(15deg); background: rgba(255,255,255,0.1); }
+
+/* Content Styles */
+h2 {
+    margin: 40px 0 15px;
+    color: var(--accent);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 20px;
+    letter-spacing: 1px;
+    border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+    padding-bottom: 10px;
+    scroll-margin-top: 100px;
+}
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+thead th {
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-muted);
+    padding: 10px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+tbody tr {
+    background: var(--row-bg);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(5px);
+    transition: background 0.3s, transform 0.3s;
+    scroll-margin-top: 120px;
+}
+
+tbody tr:hover {
+    background: var(--row-hover);
+    transform: translateX(5px);
+}
+
+tbody td {
+    padding: 18px 12px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+.match-cell {
+    width: 80px;
+    background: var(--accent-bg);
+    color: white !important;
+    clip-path: polygon(0 0, 100% 0, 80% 100%, 0% 100%);
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    text-align: center;
+    padding-right: 15px;
+}
+
+.col-team { 
+    text-align: left !important;
+    padding-left: 20px !important;
+    min-width: 250px;
+}
+.team-row { margin-bottom: 6px; }
+.team-name { font-weight: 700; font-size: 16px; color: var(--text-main); display: block; }
+.player-list { 
+    display: block; 
+    font-size: 13px; 
+    color: var(--text-muted); 
+    font-style: italic; 
+    margin-top: 2px;
+}
+.vs-divider { 
+    font-size: 11px; 
+    font-weight: 800; 
+    color: var(--accent); 
+    text-transform: uppercase; 
+    margin: 8px 0; 
+    opacity: 0.7;
+}
+
+.col-result { font-family: 'Courier New', monospace; font-weight: 800; font-size: 18px; color: var(--text-main); }
+
+.badge { padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 800; text-transform: uppercase; display: inline-block; }
+.st-done { color: var(--status-done); border: 1px solid var(--status-done); background: rgba(16, 185, 129, 0.1); }
+.st-wait { color: var(--status-wait); border: 1px dashed var(--status-wait); opacity: 0.7; }
+.st-pend { color: var(--status-pending); background: rgba(245, 158, 11, 0.1); }
+.st-agg { color: var(--text-muted); font-style: italic; }
+.winner-text { display: block; font-size: 11px; color: var(--status-wait); margin-top: 4px; text-transform: uppercase; }
+
+.bridge-box {
+    background: rgba(30, 58, 138, 0.6);
+    border-left: 4px solid var(--accent);
+    color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 0 8px 8px 0;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(4px);
+}
+.bridge-box b { text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; display: block; margin-bottom: 8px; }
+
+.action-link {
+    color: var(--accent); text-decoration: none; font-weight: 700; font-size: 13px; text-transform: uppercase;
+    border: 1px solid var(--accent); padding: 6px 12px; border-radius: 4px; transition: 0.2s;
+}
+.action-link:hover { background: var(--accent); color: white; }
+.lock { opacity: 0.5; font-size: 16px; }
+
+@media (max-width: 768px) {
+    .header-container { flex-direction: row; justify-content: space-between; padding: 10px 20px; margin: 0 -20px 20px -20px; }
+    .header-container h1 { font-size: 20px; }
+    .btn-secondary span { display: none; }
+    .filter-bar { justify-content: space-between; }
+    .filter-select { flex: 1; }
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+</style>
+</head>
+
+<body class="dark">
+
+<div class="board">
+
+    <div class="header-container">
+        <div class="header-logo-group">
+            {% if events.0.logo %}
+                <img src="{{ events.0.logo.url }}" class="header-logo" alt="Event Logo">
+            {% endif %}
+            <h1>🏆 MGCL Schedule</h1>
+        </div>
+        
+        <div class="nav-group">
+            <a href="{% url 'captain_dashboard' %}" class="btn btn-secondary" title="Captain's Portal">
+                👤 <span>Captain</span>
+            </a>
+            <a href="{% url 'big_screen' %}" class="btn btn-secondary" title="Big Screen Mode" target="_blank">
+                📺 <span>TV Mode</span>
+            </a>
+            <a href="{% url 'leaderboard' %}" class="btn">
+                🏆 <span>Leaderboard</span>
+            </a>
+            <a href="{% url 'logout' %}" class="btn btn-secondary" style="border-color: #ef4444; color: #ef4444;">
+                🚪 <span>Logout</span>
+            </a>
+            <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">
+                🌗
+            </button>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <select id="sportFilter" class="filter-select" onchange="applyFilters()">
+            <option value="all">🏅 All Sports</option>
+            </select>
+
+        <select id="teamFilter" class="filter-select" onchange="applyFilters()">
+            <option value="all">👥 All Teams</option>
+            <option value="Golden Eagles">Golden Eagles</option>
+            <option value="Rising Phoenix">Rising Phoenix</option>
+            <option value="Flying Phantoms">Flying Phantoms</option>
+            <option value="Royal Warriors">Royal Warriors</option>
+            <option value="Mighty Titans">Mighty Titans</option>
+            <option value="Super Rangers">Super Rangers</option>
+        </select>
+        
+        <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+    </div>
+
+    {% for event in events %}
+    <div class="event-section" data-sport="{{ event.sport.name }}">
+        <h2>
+            {{ event.sport }} 
+            <span style="opacity:0.6; font-weight:400;">//</span> 
+            {{ event.name }} 
+            <span style="opacity:0.6; font-size: 0.8em; margin-left: 10px;">— Event {{ event.event_id }}</span>
+        </h2>
+
+        {% if event.sport.name == "Bridge" %}
+            {% for eid, rankings in bridge_rankings.items %}
+                {% if eid == event.event_id %}
+                <div class="bridge-box">
+                    <b>Bridge Group Rankings</b>
+                    <div style="font-size: 14px; line-height: 1.6;">
+                    {% if rankings.A %}
+                        <span style="opacity:0.7">GRP A:</span> {{ rankings.A.first }}, {{ rankings.A.second }}, {{ rankings.A.third }}<br>
+                    {% endif %}
+                    {% if rankings.B %}
+                        <span style="opacity:0.7">GRP B:</span> {{ rankings.B.first }}, {{ rankings.B.second }}, {{ rankings.B.third }}
+                    {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="padding-left: 15px;">#</th> 
+                    <th>Group</th>
+                    <th>Type</th>
+                    <th style="text-align: left; padding-left: 20px;">Opponents & Players</th>
+                    <th>Date / Time</th>
+                    <th>Status</th>
+                    <th>Result</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for m in event.matches.all|dictsort:"match_no" %}
+                <tr id="match-{{ m.id }}" class="match-row" 
+                    data-team1="{{ m.team1.name }}" 
+                    data-team2="{{ m.team2.name }}"
+                    data-rule="{{ m.opponent_rule }}">
+                    
+                    <td class="match-cell">{{ m.match_no }}</td>
+                    
+                    <td>{{ m.group }}</td>
+                    <td style="font-size: 13px; opacity: 0.8;">{{ m.get_match_type_display }}</td>
+                    
+                    <td class="col-team">
+                        {% if m.team1 and m.team2 %}
+                            <div class="team-row">
+                                <span class="team-name">{{ m.team1.name }}</span>
+                                {% if m.team1_players %}
+                                    <span class="player-list">└ {{ m.team1_players }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="vs-divider">VS</div>
+                            <div class="team-row">
+                                <span class="team-name">{{ m.team2.name }}</span>
+                                {% if m.team2_players %}
+                                    <span class="player-list">└ {{ m.team2_players }}</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <span style="opacity:0.7">{{ m.opponent_rule }}</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td style="font-size: 13px;">
+                        <div>{{ m.date }}</div>
+                        <div style="opacity: 0.6; font-size: 11px;">{{ m.time }}</div>
+                    </td>
+
+                    <td>
+                        {% if m.completed %}
+                            <span class="badge st-done">Done</span>
+                        {% elif event.sport.name == "Bridge" and "all teams" in m.opponent_rule|lower %}
+                            <span class="badge st-agg">Aggregate</span>
+                        {% elif m.is_bracket_match and not m.bracket_ready and event.sport.name != "Swimming" %}
+                            <span class="badge st-wait">Waiting</span>
+                        {% else %}
+                            <span class="badge st-pend">Pending</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="col-result">
+                        {% if m.completed %}
+                            {# THE FIX: Hide numeric scores for Bridge Aggregate matches #}
+                            {% if m.event.sport.name == "Bridge" and "all teams" in m.opponent_rule|lower %}
+                                <span class="winner-text">🏆 {{ m.winner }}</span>
+                            {% else %}
+                                {{ m.team1_score }} - {{ m.team2_score }}
+                                <span class="winner-text">🏆 {{ m.winner }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="opacity:0.2">—</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if user.is_staff %}
+                            {% if m.event.is_locked %}
+                                <span class="lock" title="Event Finalized">🔒</span>
+                            {% elif m.completed %}
+                                <a href="{% url 'score_entry' m.id %}" class="action-link" style="border-color: #f59e0b; color: #f59e0b;">Edit</a>
+                            {% elif event.sport.name == "Swimming" %}
+                                {# THE FIX: Swimming is always open regardless of bracket/team state #}
+                                <a href="{% url 'score_entry' m.id %}" class="action-link">Enter Score</a>
+                            {% elif m.is_bracket_match and not m.bracket_ready %}
+                                <span style="opacity:0.3; font-size:12px;">Locked</span>
+                            {% else %}
+                                <a href="{% url 'score_entry' m.id %}" class="action-link">Enter Score</a>
+                            {% endif %}
+                        {% else %}
+                            {% if m.completed %}
+                                <span style="opacity:0.5; font-size:20px;">✓</span>
+                            {% else %}
+                                <span style="opacity:0.1; font-size:20px;">—</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+</div>
+
+<script>
+    // 1. THEME LOGIC
+    function toggleTheme() {
+        const body = document.body;
+        body.classList.toggle("dark");
+        localStorage.setItem("mgcl-theme", body.classList.contains("dark") ? "dark" : "light");
+    }
+
+    // 2. FILTER LOGIC
+    function populateSportFilter() {
+        const sections = document.querySelectorAll('.event-section');
+        const sports = new Set();
+        sections.forEach(sec => sports.add(sec.dataset.sport));
+        
+        const select = document.getElementById('sportFilter');
+        sports.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.innerText = s;
+            select.appendChild(opt);
+        });
+    }
+
+    function applyFilters() {
+        const sportVal = document.getElementById('sportFilter').value;
+        const teamVal = document.getElementById('teamFilter').value;
+        
+        const sections = document.querySelectorAll('.event-section');
+
+        sections.forEach(section => {
+            const matches = section.querySelectorAll('.match-row');
+            let hasVisibleMatch = false;
+
+            // 1. Check Sport Filter (Whole Section)
+            if (sportVal !== 'all' && section.dataset.sport !== sportVal) {
+                section.style.display = 'none';
+                return; // Skip checking matches
+            } else {
+                section.style.display = ''; // Reset display
+            }
+
+            // 2. Check Team Filter (Individual Rows)
+            matches.forEach(row => {
+                if (teamVal === 'all') {
+                    row.style.display = '';
+                    hasVisibleMatch = true;
+                } else {
+                    const t1 = row.dataset.team1 || "";
+                    const t2 = row.dataset.team2 || "";
+                    
+                    if (t1.includes(teamVal) || t2.includes(teamVal)) {
+                        row.style.display = '';
+                        hasVisibleMatch = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+
+            // 3. Hide Empty Sections (e.g. if Team has no Badminton games)
+            if (!hasVisibleMatch) {
+                section.style.display = 'none';
+            }
+        });
+    }
+
+    function resetFilters() {
+        document.getElementById('sportFilter').value = 'all';
+        document.getElementById('teamFilter').value = 'all';
+        applyFilters();
+    }
+
+    // 3. INIT
+    window.onload = () => {
+        // Restore Theme
+        const savedTheme = localStorage.getItem("mgcl-theme");
+        if (savedTheme === "light") document.body.classList.remove("dark");
+        else if (!document.body.classList.contains("dark")) document.body.classList.add("dark");
+
+        // Init Filters
+        populateSportFilter();
+    };
+</script>
+
+</body>
+</html>

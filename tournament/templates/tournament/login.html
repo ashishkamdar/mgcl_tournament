@@ -1,0 +1,41 @@
+{% extends "tournament/base.html" %}
+
+{% block content %}
+<div class="board" style="max-width: 400px; margin: 60px auto; text-align: center; color: white;">
+    
+    <div style="font-size: 50px; margin-bottom: 20px;">🏆</div>
+    <h1 style="text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">Captain's Portal</h1>
+    <p style="opacity: 0.6; margin-bottom: 30px;">Please sign in to manage your squad.</p>
+
+    {% if form.errors %}
+        <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+            ⚠️ Invalid username or password.
+        </div>
+    {% endif %}
+
+    <form method="post" style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        {% csrf_token %}
+        
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label style="display: block; font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; color: #94a3b8;">Username</label>
+            <input type="text" name="username" autofocus required 
+                   style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; outline: none;">
+        </div>
+
+        <div style="text-align: left; margin-bottom: 30px;">
+            <label style="display: block; font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; color: #94a3b8;">Password</label>
+            <input type="password" name="password" required 
+                   style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; outline: none;">
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%; padding: 14px; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">
+            Sign In
+        </button>
+    </form>
+
+    <div style="margin-top: 30px; opacity: 0.5; font-size: 13px;">
+        <a href="{% url 'fixtures' %}" style="color: white; text-decoration: none;">&larr; Back to Schedule</a>
+    </div>
+
+</div>
+{% endblock %}

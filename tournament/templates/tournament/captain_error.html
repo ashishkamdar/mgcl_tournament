@@ -1,0 +1,31 @@
+{% extends "tournament/base.html" %}
+
+{% block content %}
+<div class="board" style="max-width: 600px; margin: 60px auto; text-align: center; color: white;">
+    
+    <div style="font-size: 60px; margin-bottom: 20px;">⚠️</div>
+    
+    <h1 style="color: #ef4444; margin-bottom: 15px;">Access Denied</h1>
+    
+    <p style="font-size: 18px; line-height: 1.6; opacity: 0.8; margin-bottom: 30px;">
+        {{ message }}
+    </p>
+
+    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+        <strong>Tip:</strong> You are currently logged in as an Administrator or a User without a team link. 
+        <br><br>
+        Please <b>Logout</b> and sign in with a specific Team Captain account (e.g., <em>golden_eagles</em>).
+    </div>
+
+    <a href="{% url 'logout' %}" class="btn" style="background: #ef4444; padding: 12px 25px; font-size: 16px;">
+        Logout & Switch Account
+    </a>
+    
+    <br><br>
+    
+    <a href="{% url 'fixtures' %}" style="color: #94a3b8; text-decoration: none; font-size: 14px;">
+        &larr; Return to Schedule
+    </a>
+
+</div>
+{% endblock %}

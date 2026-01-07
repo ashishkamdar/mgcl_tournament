@@ -1,0 +1,252 @@
+{% load tournament_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bridge Group Scoring</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+  /* LIGHT MODE */
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --input-bg: #f1f5f9;
+  --input-border: #cbd5e1;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --row-bg: rgba(255,255,255,0.5);
+}
+
+body.dark {
+  /* DARK MODE */
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+  --card-bg: rgba(15, 23, 42, 0.8);
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --input-bg: #1e293b;
+  --input-border: #334155;
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  --row-bg: rgba(255,255,255,0.05);
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.score-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 550px;
+  text-align: center;
+  position: relative;
+}
+
+/* Header Branding */
+.header-logo-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.header-logo {
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin: 0;
+}
+
+h3 {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin: 5px 0 30px 0;
+}
+
+.team-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--row-bg);
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid transparent;
+}
+
+.team-row:focus-within {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.team-name {
+  font-weight: 700;
+  font-size: 16px;
+  text-align: left;
+}
+
+input[type="number"] {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-main);
+  font-family: 'Courier New', monospace;
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+  padding: 8px;
+  border-radius: 6px;
+  width: 100px;
+  outline: none;
+}
+
+input[type="number"]:focus {
+  border-color: var(--accent);
+}
+
+.save-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 20px;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(110%);
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 25px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--input-border);
+  padding: 8px 16px;
+  border-radius: 50px;
+  transition: 0.2s;
+}
+
+.back-link:hover {
+  background: var(--input-bg);
+  color: var(--text-main);
+}
+
+/* Toggle Icon */
+.icon-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+</style>
+</head>
+
+<body class="dark">
+
+<div class="score-card">
+    <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">🌗</button>
+
+    <div class="header-logo-group">
+        {% if match.event.logo %}
+            <img src="{{ match.event.logo.url }}" class="header-logo" alt="MGCL Logo">
+        {% endif %}
+        <h1>Bridge Scoring</h1>
+    </div>
+    <h3>Group {{ match.group }}</h3>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 20px; text-align: right; font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; padding-right: 10px;">
+            Victory Points (VP)
+        </div>
+
+        {% for team in teams %}
+        <div class="team-row">
+            <span class="team-name">{{ team.name }}</span>
+            <input type="number" 
+                   name="score_{{ team.id }}" 
+                   step="1" 
+                   required 
+                   placeholder="0"
+                   {# Hide decimals for a cleaner integer look #}
+                   value="{{ initial_raw_scores|get_item:team.id|floatformat:0 }}">
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="save-btn">Save Rankings</button>
+    </form>
+
+    <a href="{% url 'fixtures' %}#match-{{ match.id }}" class="back-link">← Cancel & Return</a>
+</div>
+
+<script>
+function toggleTheme() {
+  const body = document.body;
+  body.classList.toggle("dark");
+  localStorage.setItem("mgcl-theme", body.classList.contains("dark") ? "dark" : "light");
+}
+
+window.onload = () => {
+  const savedTheme = localStorage.getItem("mgcl-theme");
+  if (savedTheme === "light") {
+    document.body.classList.remove("dark");
+  } else {
+    if (!document.body.classList.contains("dark")) {
+      document.body.classList.add("dark");
+    }
+  }
+};
+</script>
+
+</body>
+</html>

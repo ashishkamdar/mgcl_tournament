@@ -1,3 +1,4 @@
+import os
 """
 Django settings for mgcl_tournament project.
 
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-p#v$dze+s+0kgc*ar(up1!5m34^vx$p#_e4j0!6m0dt9n%o-$f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['mgcl.areakpi.in', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -100,6 +101,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -117,3 +120,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# ==========================================
+# AUTHENTICATION SETTINGS
+# ==========================================
+LOGIN_URL = 'login'            # If not logged in, go here
+LOGIN_REDIRECT_URL = 'fixtures'  # After login, go here
+LOGOUT_REDIRECT_URL = 'login'  # After logout, go here
