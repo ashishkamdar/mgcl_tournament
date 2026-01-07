@@ -92,7 +92,7 @@ def update_bridge_playoff_advancement(event):
             m7.team1, m7.team2 = get_w(sf1), get_w(sf2)
             auto_assign_squad(m7) # Automatically populate squad to prevent blocking
             m7.save()
-            
+
 def calculate_group_standings(event):
     """Calculates points based on the 100/70/50/40/30/10 scale."""
     all_teams = Team.objects.all()
@@ -168,27 +168,64 @@ def auto_assign_squad(match):
     if not match.team2_players: match.team2_players = get_prev(match.team2)
 
 def update_bracket_matches(event):
-    if Match.objects.filter(event=event, group__in=["A", "B"], completed=False).exclude(team1=None).exists():
-        return 
-    standings_a, standings_b = get_sorted_teams(event, "A"), get_sorted_teams(event, "B")
-    if len(standings_a) < 2 or len(standings_b) < 2: return
-    bracket_qs = Match.objects.filter(event=event, group="A&B")
-    for m in bracket_qs:
-        if m.completed: continue
-        rule = (m.opponent_rule or "").lower()
-        if "1st of group a" in rule or "2nd of group b" in rule:
-            m.team1, m.team2 = standings_a[0], standings_b[1]
-            auto_assign_squad(m)
-            m.save()
-        elif "1st of group b" in rule or "2nd of group a" in rule:
-            m.team1, m.team2 = standings_b[0], standings_a[1]
-            auto_assign_squad(m)
-            m.save()
-        elif "3rd of group a" in rule and len(standings_a) >= 3 and len(standings_b) >= 3:
-            m.team1, m.team2 = standings_a[2], standings_b[2]
-            auto_assign_squad(m)
-            m.save()
+    # 1. First, handle the transition from Round Robin to Semi-Finals
+    standings_a = get_sorted_teams(event, "A")
+    standings_b = get_sorted_teams(event, "B")
+    
+    # Only try to populate SFs if we have enough teams
+    if len(standings_a) >= 2 and len(standings_b) >= 2:
+        bracket_qs = Match.objects.filter(event=event, group="A&B")
+        for m in bracket_qs:
+            if m.completed: continue
+            rule = (m.opponent_rule or "").lower()
+            
+            # Match 7: SF 1
+            if "1st a" in rule or "1st of group a" in rule or "2nd of group b" in rule:
+                m.team1, m.team2 = standings_a[0], standings_b[1]
+                auto_assign_squad(m)
+                m.save()
+            # Match 8: SF 2
+            elif "1st b" in rule or "1st of group b" in rule or "2nd of group a" in rule:
+                m.team1, m.team2 = standings_b[0], standings_a[1]
+                auto_assign_squad(m)
+                m.save()
+            # Match 9: 5-6 Position
+            elif "3rd a" in rule or "3rd of group a" in rule:
+                if len(standings_a) >= 3 and len(standings_b) >= 3:
+                    m.team1, m.team2 = standings_a[2], standings_b[2]
+                    auto_assign_squad(m)
+                    m.save()
 
+    # 2. NEW: Handle the transition from Semi-Finals to Finals (Matches 10 & 11)
+    unlock_final_rounds(event)
+
+def unlock_final_rounds(event):
+    """Unlocks Match 10 (3-4 Pos) and Match 11 (Finals) based on Semi-Final results."""
+    # Semi-Finals are usually Match 7 and 8
+    sf_matches = Match.objects.filter(event=event, match_no__in=[7, 8], completed=True)
+    
+    if sf_matches.count() == 2:
+        sf1 = sf_matches.filter(match_no=7).first()
+        sf2 = sf_matches.filter(match_no=8).first()
+        
+        # Helper to get winner/loser objects
+        def get_w(m): return m.team1 if m.winner == m.team1.name else m.team2
+        def get_l(m): return m.team1 if m.winner != m.team1.name else m.team2
+
+        # Unlock Match 10 (3rd/4th)
+        m10 = Match.objects.filter(event=event, match_no=10).first()
+        if m10 and not m10.completed:
+            m10.team1, m10.team2 = get_l(sf1), get_l(sf2)
+            auto_assign_squad(m10)
+            m10.save()
+
+        # Unlock Match 11 (Finals)
+        m11 = Match.objects.filter(event=event, match_no=11).first()
+        if m11 and not m11.completed:
+            m11.team1, m11.team2 = get_w(sf1), get_w(sf2)
+            auto_assign_squad(m11)
+            m11.save()
+            
 def get_sorted_teams(event, group):
     matches = Match.objects.filter(event=event, group=group, completed=True)
     teams = Team.objects.filter(pool=group)

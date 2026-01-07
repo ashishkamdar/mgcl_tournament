@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-white mb-4">🏆 Manual Points Entry</h2>
+    <div class="table-responsive bg-dark p-3 rounded shadow">
+        <table class="table table-dark table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Event ID</th>
+                    {% for team in teams %}
+                    <th colspan="2" class="text-center border-start">{{ team.name }}</th>
+                    {% endfor %}
+                    <th>Action</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    {% for team in teams %}<th class="small border-start">Pos</th><th class="small">Pts</th>{% endfor %}
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for res in results %}
+                <form method="POST" class="ajax-form">
+                <tr>
+                    <td><input type="text" name="name" value="{{ res.event_name }}" class="form-control form-control-sm bg-secondary text-white border-0"></td>
+                    <input type="hidden" name="event_id" value="{{ res.event_id }}">
+                    {% for team in teams %}
+                    <td class="border-start">
+                        <input type="text" name="pos_{{ team.code }}" value="{{ res.results_data|default:''|get_item:team.code|get_item:'pos' }}" class="form-control form-control-sm w-50">
+                    </td>
+                    <td>
+                        <input type="number" name="pts_{{ team.code }}" value="{{ res.results_data|default:''|get_item:team.code|get_item:'pts' }}" class="form-control form-control-sm">
+                    </td>
+                    {% endfor %}
+                    <td><button type="submit" class="btn btn-sm btn-primary">Save</button></td>
+                </tr>
+                </form>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

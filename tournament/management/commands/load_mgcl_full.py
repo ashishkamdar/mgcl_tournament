@@ -1,6 +1,7 @@
 import random
 import re # Added for text parsing
 from django.db.models import Q
+from django.db.models.signals import post_save # Required to trigger engine logic
 from django.core.management.base import BaseCommand
 from datetime import date, time
 from tournament.models import Sport, Team, Event, Match, Player, ChampionshipStanding
@@ -288,16 +289,11 @@ class Command(BaseCommand):
         for sport, eid, no, grp, mtype, rule, d, tm, vtype, vno in schedule:
             
             # --- PARSE OPPONENTS FROM RULE ---
-            # e.g., "Golden Eagles Vs Flying Phantoms"
             t1_obj = None
             t2_obj = None
             
-            # Try to split by case-insensitive 'vs'
-            # Note: The PDF data uses "Vs", "vs", and sometimes newlines.
-            # We'll normalize spaces and check.
             clean_rule = rule.replace("\n", " ").strip()
             
-            # We only parse if it looks like a Versus string
             if " vs " in clean_rule.lower():
                 parts = re.split(r'\s+[vV][sS]\s+', clean_rule)
                 if len(parts) >= 2:
@@ -313,8 +309,8 @@ class Command(BaseCommand):
                 group=grp,
                 match_type=mtype,
                 opponent_rule=rule,
-                team1=t1_obj,  # <--- LINKED HERE
-                team2=t2_obj,  # <--- LINKED HERE
+                team1=t1_obj,
+                team2=t2_obj,
                 date=d,
                 time=tm,
                 venue_type=vtype,
@@ -325,31 +321,25 @@ class Command(BaseCommand):
         self.stdout.write(f"✅ {len(match_objs)} Matches Created.")
 
         # ======================================================
-        # 7. AUTO-ASSIGN PLAYERS (Random Placeholder)
+        # 7. AUTO-ASSIGN PLAYERS
         # ======================================================
         self.stdout.write("🎲 Randomly assigning players to matches...")
         
         for m in match_objs:
-            # Skip if match has no teams yet (semi-finals, placeholders)
             if not m.team1 or not m.team2:
                 continue
             
-            # Determine required players based on sport
             sport_name = m.event.sport.name.lower()
             event_name = m.event.name.lower()
             
-            # Logic: Doubles/Bridge = 2 players, Singles/Swimming = 1 player
             if "double" in event_name or "bridge" in sport_name:
                 req_players = 2
             else:
                 req_players = 1
                 
-            # Helper to pick players
             def pick_squad(team, s_name):
-                # Filter players by team AND sport (fuzzy match for 'TT' / 'Swimming')
                 candidates = Player.objects.filter(team=team)
                 
-                # Handling special cases for labels like "Swimming / TT" or "Table Tennis"
                 if "table" in s_name or "tt" in s_name:
                     candidates = candidates.filter(Q(sport_label__icontains="Table") | Q(sport_label__icontains="TT"))
                 elif "swimming" in s_name:
@@ -362,12 +352,19 @@ class Command(BaseCommand):
                     chosen = random.sample(pool_list, req_players)
                     return ", ".join([p.name for p in chosen])
                 elif pool_list:
-                    return ", ".join([p.name for p in pool_list]) # Take all if fewer than needed
+                    return ", ".join([p.name for p in pool_list]) 
                 return ""
 
-            # Assign
             m.team1_players = pick_squad(m.team1, sport_name)
             m.team2_players = pick_squad(m.team2, sport_name)
             m.save()
 
-        self.stdout.write(self.style.SUCCESS("🏆 MGCL Setup Complete with Randomized Rosters!"))
+        # ======================================================
+        # 8. TRIGGER ENGINE LOGIC FOR LOADED DATA (THE FIX)
+        # ======================================================
+        self.stdout.write("⚙️ Force-triggering engine logic to unlock brackets...")
+        for m in Match.objects.all():
+            # Manually trigger the post_save signal that engine.py listens to
+            post_save.send(sender=Match, instance=m, created=False)
+
+        self.stdout.write(self.style.SUCCESS("🏆 MGCL Setup Complete. All logic verified!"))

@@ -112,3 +112,19 @@ class SwimmingResult(models.Model):
     fourth = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="swim_4th")
     fifth = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="swim_5th")
     sixth = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="swim_6th")
+
+
+class ManualEventResult(models.Model):
+    """Independent manual entry for championship points."""
+    event_id = models.IntegerField(unique=True) # 1 to 17
+    event_name = models.CharField(max_length=100)
+    
+    # Store data as JSON to easily map Team -> (Position, Points)
+    # Example: {"T1": {"pos": 1, "pts": 100}, "T2": {"pos": 2, "pts": 70}}
+    results_data = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ['event_id']
+
+    def __str__(self):
+        return f"Event {self.event_id}: {self.event_name}"
