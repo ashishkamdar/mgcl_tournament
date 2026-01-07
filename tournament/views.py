@@ -24,6 +24,9 @@ from tournament.engine import update_championship, is_placeholder_match
 
 def login_selection(request):
     """The central portal featuring MGCL 2026 branding."""
+    # If already logged in, send them straight to fixtures
+    if request.user.is_authenticated:
+        return redirect('fixtures')
     event = Event.objects.first()
     return render(request, "tournament/login_selection.html", {"event": event})
 
@@ -33,10 +36,12 @@ def custom_logout(request):
     return redirect('login_selection')
 
 # ============================
-# Leaderboard & Data
+# Leaderboard & Data (PROTECTED)
 # ============================
 
+@login_required
 def leaderboard(request):
+    """Viewable only after login."""
     standings_a = ChampionshipStanding.objects.filter(team__pool="A").select_related('team').order_by(
         "-total_points", "-gold", "-silver", "-bronze"
     )
@@ -48,6 +53,7 @@ def leaderboard(request):
         "standings_b": standings_b
     })
 
+@login_required
 def leaderboard_data(request):
     standings = ChampionshipStanding.objects.order_by("-total_points", "-gold", "-silver", "-bronze")
     data = []
@@ -59,16 +65,19 @@ def leaderboard_data(request):
     return JsonResponse(data, safe=False)
 
 # ============================
-# Fixtures & Big Screen
+# Fixtures & Big Screen (PROTECTED)
 # ============================
 
+@login_required
 def fixtures(request):
+    """Viewable only after login."""
     events = Event.objects.prefetch_related("matches").order_by("sport__name", "event_id")
     bridge_rankings = {}
     for r in BridgeGroupResult.objects.select_related("event", "first", "second", "third"):
         bridge_rankings.setdefault(r.event_id, {})[r.group] = r
     return render(request, "tournament/fixtures.html", {"events": events, "bridge_rankings": bridge_rankings})
 
+@login_required
 def big_screen(request):
     standings_a = ChampionshipStanding.objects.filter(team__pool="A").order_by("-total_points", "-gold")
     standings_b = ChampionshipStanding.objects.filter(team__pool="B").order_by("-total_points", "-gold")
@@ -100,14 +109,12 @@ def select_squad(request, match_id):
     sport_name = match.event.sport.name
     roster = Player.objects.filter(team=my_team).filter(Q(sport_label__icontains=sport_name) | Q(sport_label__icontains="All"))
     
-    # Calculate required count (e.g., 2 for doubles/bridge, 1 for singles)
     req_count = 2 if "double" in match.event.name.lower() or "bridge" in sport_name.lower() else 1
 
     if request.method == "POST":
         selected_ids = request.POST.getlist('players')
         guest_name = request.POST.get('guest_name', '').strip()
         
-        # --- VALIDATION CHECK ---
         total_selected = len(selected_ids) + (1 if guest_name else 0)
         
         if total_selected > req_count:
@@ -117,7 +124,6 @@ def select_squad(request, match_id):
                 "match": match, "roster": roster, "req_count": req_count, "current_squad": current_squad or ""
             })
 
-        # Process names
         selected_objs = roster.filter(id__in=selected_ids)
         player_names = [p.name for p in selected_objs]
         if guest_name:
@@ -128,7 +134,6 @@ def select_squad(request, match_id):
         else: match.team2_players = final_squad
         match.save()
 
-        # --- AUTO-UPDATE LOGIC ---
         if not guest_name and len(selected_ids) == (roster.count() / 2):
             other_match = Match.objects.filter(event=match.event, completed=False).filter(
                 Q(team1=my_team) | Q(team2=my_team)
