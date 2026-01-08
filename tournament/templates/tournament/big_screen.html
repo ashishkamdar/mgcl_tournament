@@ -6,19 +6,16 @@
 {% block content %}
 <meta http-equiv="refresh" content="20">
 
-<div class="container-fluid px-3" style="margin-top: 15px; margin-bottom: 150px;">
+<div class="container-fluid px-3" style="margin-top: 20px; margin-bottom: 150px;">
     
-    <div class="container-fluid mb-4 mt-3">
-        <div class="d-flex justify-content-center align-items-center text-center">
-            <img src="/media/event_logos/MGCL-logo.png" alt="MGCL Logo" 
-                 style="height: 60px; width: auto; margin-right: 20px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
-            
+    <div class="text-start mb-4 ps-1">
+        <div class="d-flex align-items-center">
+            <img src="/media/event_logos/MGCL-logo.png" alt="MGCL" style="height: 60px; width: auto; margin-right: 20px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
             <div>
-                <h2 class="text-white fw-bold m-0 p-0 title-responsive" 
-                    style="letter-spacing: 2px; text-shadow: 3px 3px 6px rgba(0,0,0,0.7); font-size: 2.5rem;">
+                <h2 class="text-white fw-bold m-0 p-0 title-responsive" style="letter-spacing: 2px; text-shadow: 3px 3px 6px rgba(0,0,0,0.7);">
                     CHAMPIONSHIP STANDINGS
                 </h2>
-                <div class="text-info opacity-75 fw-bold" style="font-size: 1rem; margin-top: 5px; letter-spacing: 1px;">
+                <div class="text-info opacity-75 fw-bold" style="font-size: 0.9rem; margin-top: 5px; letter-spacing: 1px;">
                     <i class="fas fa-sync-alt fa-spin me-2"></i>LIVE UPDATES - AUTO REFRESHING
                 </div>
             </div>
@@ -26,14 +23,14 @@
     </div>
 
     <div class="table-responsive shadow-lg border border-secondary rounded custom-scrollbar">
-        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-striped force-center main-table-logic" style="font-size: 1.1rem; width: 100%;">
+        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-striped force-center main-table-logic" style="font-size: 1rem; width: 100%;">
             <thead class="table-header-glass text-white">
                 <tr>
                     <th style="width: 50px; text-align: left;" class="ps-3 border-bottom-0 border-end border-secondary">ID</th>
                     <th style="min-width: 180px; text-align: left;" class="ps-3 border-bottom-0">Tournament Event</th>
                     
                     {% for team in teams %}
-                    <th colspan="2" class="border-start border-light-subtle p-0" style="height: 110px; min-width: 170px;">
+                    <th colspan="2" class="border-start border-light-subtle p-0" style="height: 100px; min-width: 160px;">
                         <div class="d-flex align-items-center h-100 ps-2">
                             <div class="flex-shrink-0">
                                 {% if team.name == "Golden Eagles" %}
@@ -49,7 +46,7 @@
                                 {% elif team.name == "Super Rangers" %}
                                     <img src="/media/team_icons/Super_Rangers-removebg-preview.png" class="header-logo">
                                 {% else %}
-                                    <i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 40px;"></i>
+                                    <i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 35px;"></i>
                                 {% endif %}
                             </div>
                             <div class="ms-2 text-start lh-1 fw-bold team-label">
@@ -72,7 +69,7 @@
                 {% for res in results %}
                 <tr class="championship-row">
                     <td class="ps-3 text-info fw-bold text-start border-end border-secondary">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-3 text-start text-truncate" style="font-size: 1rem;">
+                    <td class="fw-bold ps-3 text-start text-truncate" style="font-size: 0.95rem;">
                         {% if res.event_id == 1 %}Badminton 1
                         {% elif res.event_id == 2 %}Badminton 2
                         {% elif res.event_id == 3 %}Bridge
@@ -111,7 +108,7 @@
                     <td class="text-end pe-3 fs-5 border-0">GRAND TOTAL:</td> 
                     {% for team in teams %}
                     <td class="border-start border-warning-subtle"></td>
-                    <td class="fs-3 text-center" style="text-shadow: 0 0 15px rgba(255,193,7,0.6);">
+                    <td class="fs-4 text-center" style="text-shadow: 0 0 15px rgba(255,193,7,0.6);">
                         {% if team_totals.items %}{{ team_totals|get_item:team.code }}{% else %}0{% endif %}
                     </td>
                     {% endfor %}
@@ -123,47 +120,41 @@
 
 <div class="qr-footer-container d-none d-lg-flex align-items-center">
     <div class="text-end me-4">
-        <div class="text-white fw-bold" style="font-size: 1.1rem; line-height: 1.3; text-shadow: 2px 2px 8px #000;">
+        <div class="text-white fw-bold" style="font-size: 1rem; line-height: 1.3; text-shadow: 2px 2px 8px #000;">
             SCAN FOR LIVE UPDATES<br>ON THE GO
         </div>
     </div>
-    <div class="bg-white p-2 rounded shadow-lg" style="width: 130px; height: 130px; border: 3px solid #1e40af;">
-        <img id="qrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=114x114&data={{ request.build_absolute_uri }}" 
-             alt="Scan for Mobile View" style="width: 114px; height: 114px;">
+    <div class="bg-white p-2 rounded shadow-lg" style="width: 120px; height: 120px; border: 3px solid #1e40af;">
+        <img id="qrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=104x104&data={{ request.build_absolute_uri }}" 
+             alt="Scan for Mobile" style="width: 104px; height: 104px;">
     </div>
 </div>
 
 <style>
-    /* BIG SCREEN (DESKTOP) RULES */
+    /* DESKTOP / BIG SCREEN LOGIC */
     @media (min-width: 1200px) {
         .main-table-logic { table-layout: fixed; }
         .table-responsive { overflow-x: hidden; }
-        .title-responsive { font-size: 2.8rem !important; }
+        .title-responsive { font-size: 2.5rem; }
     }
 
-    /* MOBILE RULES */
+    /* MOBILE LOGIC */
     @media (max-width: 1199px) {
         .main-table-logic { table-layout: auto; }
         .table-responsive { overflow-x: auto; }
-        .title-responsive { font-size: 1.6rem !important; }
-        .qr-footer-container { display: none !important; }
-        .container-fluid { margin-bottom: 20px !important; }
+        .title-responsive { font-size: 1.5rem; }
+        .qr-footer-container { display: none !important; } /* Hide QR on mobile since they are already on mobile */
     }
 
     .qr-footer-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
     .table-responsive { width: 100%; }
     .force-center th, .force-center td { text-align: center !important; }
     .force-center td:nth-child(2), .force-center th:nth-child(2) { text-align: left !important; }
-    
-    .header-logo { height: 60px; width: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)); }
-    .team-label { font-size: 0.85rem; color: white; display: inline-block; white-space: normal; line-height: 1.1; width: 95px; }
-    
+    .header-logo { height: 50px; width: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)); }
+    .team-label { font-size: 0.8rem; color: white; display: inline-block; white-space: normal; line-height: 1.1; width: 85px; }
     .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%) !important; }
     .table-footer-accent { background: #020617 !important; border-top: 4px solid #fbbf24 !important; }
     .championship-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.04); }
     .championship-row:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.25); }
-    
-    @keyframes pulse-sync { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-    .fa-sync-alt { animation: pulse-sync 2s infinite ease-in-out; }
 </style>
 {% endblock %}
