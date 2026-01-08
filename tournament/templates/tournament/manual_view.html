@@ -22,15 +22,15 @@
         </div>
     </div>
 
-    <div class="table-responsive shadow-lg border border-secondary rounded" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-striped force-center" style="font-size: 0.82rem; min-width: 900px; width: 100%; table-layout: auto;">
+    <div class="scroll-container shadow-lg border border-secondary rounded">
+        <table class="table table-dark table-bordered table-sm align-middle mb-0 force-center">
             <thead class="table-header-glass text-white">
                 <tr>
-                    <th style="width: 45px; text-align: left;" class="ps-2 border-bottom-0 border-end border-secondary">ID</th>
-                    <th style="min-width: 160px; text-align: left;" class="ps-2 border-bottom-0">Tournament Event</th>
+                    <th class="id-col border-bottom-0 border-end border-secondary">ID</th>
+                    <th class="event-col border-bottom-0">Tournament Event</th>
                     
                     {% for team in teams %}
-                    <th colspan="2" class="border-start border-light-subtle p-0" style="height: 85px;">
+                    <th colspan="2" class="team-header-cell border-start border-light-subtle p-0">
                         <div class="d-flex align-items-center h-100 ps-1">
                             <div class="flex-shrink-0">
                                 {% if team.name == "Golden Eagles" %}
@@ -69,7 +69,7 @@
                 {% for res in results %}
                 <tr class="championship-row">
                     <td class="ps-2 text-info small fw-bold text-start border-end border-secondary">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-2 text-start text-nowrap">
+                    <td class="fw-bold ps-2 text-start text-truncate event-name-cell">
                         {% if res.event_id == 1 %}Badminton 1
                         {% elif res.event_id == 2 %}Badminton 2
                         {% elif res.event_id == 3 %}Bridge
@@ -91,10 +91,10 @@
                     </td>
                     {% for team in teams %}
                     {% with team_data=res.results_data|get_item:team.code %}
-                    <td class="border-start border-secondary-subtle {% if team_data.pos == '1' %}bg-warning text-dark fw-bold shadow-inset{% elif team_data.pos == '2' %}bg-secondary text-white{% elif team_data.pos == '3' %}bg-danger text-white{% endif %}">
+                    <td class="score-cell border-start border-secondary-subtle {% if team_data.pos == '1' %}bg-warning text-dark fw-bold shadow-inset{% elif team_data.pos == '2' %}bg-secondary text-white{% elif team_data.pos == '3' %}bg-danger text-white{% endif %}">
                         {{ team_data.pos|default:"-" }}
                     </td>
-                    <td style="background: rgba(255,255,255,0.03);">
+                    <td class="score-cell" style="background: rgba(255,255,255,0.03);">
                         {{ team_data.pts|default:"0" }}
                     </td>
                     {% endwith %}
@@ -108,7 +108,7 @@
                     <td class="text-end pe-2 fs-6 border-0">TOTAL:</td> 
                     {% for team in teams %}
                     <td class="border-start border-warning-subtle"></td>
-                    <td class="text-center" style="text-shadow: 0 0 10px rgba(255,193,7,0.4);">
+                    <td class="text-center score-cell" style="text-shadow: 0 0 10px rgba(255,193,7,0.4);">
                         {% if team_totals.items %}{{ team_totals|get_item:team.code }}{% else %}0{% endif %}
                     </td>
                     {% endfor %}
@@ -118,7 +118,7 @@
     </div>
 </div>
 
-<div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;" class="d-flex align-items-center">
+<div class="qr-container d-flex align-items-center">
     <div class="text-end me-3">
         <div class="text-white fw-bold" style="font-size: 0.75rem; line-height: 1.2; text-shadow: 2px 2px 4px #000;">
             Scan for live updates<br>on the go
@@ -131,12 +131,28 @@
 </div>
 
 <style>
-    /* Updated to allow scrolling and prevent text wrapping */
-    .table-responsive { width: 100%; overflow-x: auto; display: block; }
-    .table td, .table th { white-space: nowrap; }
-    
-    .force-center th, .force-center td { text-align: center !important; }
-    .force-center td:nth-child(2), .force-center th:nth-child(2) { text-align: left !important; }
+    /* CRITICAL: This prevents the table from shrinking on mobile */
+    .scroll-container {
+        width: 100%;
+        overflow-x: auto;
+        display: block;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        min-width: 1200px !important; /* Forces horizontal width so it never squeezes */
+        table-layout: fixed;
+        width: 1200px;
+    }
+
+    /* Fixed Column Widths */
+    .id-col { width: 45px; text-align: left !important; }
+    .event-col { width: 180px; text-align: left !important; }
+    .team-header-cell { width: 160px; height: 85px; }
+    .score-cell { width: 40px; }
+
+    /* Visual Styles */
+    .force-center th, .force-center td { text-align: center; }
     .header-logo { height: 40px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
     .team-label { font-size: 0.68rem; color: white; display: inline-block; white-space: normal; line-height: 1; width: 75px; }
     .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%) !important; }
@@ -144,5 +160,12 @@
     .table-footer-accent { background: #020617 !important; border-top: 2px solid #fbbf24 !important; }
     .championship-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.04); }
     .championship-row:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.18); }
+    
+    .qr-container {
+        position: fixed; 
+        bottom: 20px; 
+        right: 20px; 
+        z-index: 1000;
+    }
 </style>
 {% endblock %}
