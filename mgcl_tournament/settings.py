@@ -9,7 +9,7 @@ SECRET_KEY = 'django-insecure-p#v$dze+s+0kgc*ar(up1!5m34^vx$p#_e4j0!6m0dt9n%o-$f
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Set to False when actually going live to prevent leaking code errors.
-DEBUG = True 
+DEBUG = False 
 
 ALLOWED_HOSTS = ['mgcl.areakpi.in', '127.0.0.1', 'localhost']
 

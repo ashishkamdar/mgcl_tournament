@@ -251,7 +251,9 @@ def manual_leaderboard_entry(request):
     results = ManualEventResult.objects.all()
     return render(request, "tournament/manual_entry.html", {"teams": teams, "results": results})
 
+from django.views.decorators.cache import cache_page
 # REMOVED @login_required to make this public
+@cache_page(30) # Cache the standings for 30 seconds
 def manual_championship_view(request):
     """The final beautiful read-only table accessible to everyone."""
     teams = Team.objects.all().order_by('code')
