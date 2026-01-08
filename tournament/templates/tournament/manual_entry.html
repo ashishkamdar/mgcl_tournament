@@ -1,43 +1,130 @@
-{% extends "base.html" %}
+{% extends "tournament/base.html" %}
+{% load tournament_extras %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2 class="text-white mb-4">🏆 Manual Points Entry</h2>
-    <div class="table-responsive bg-dark p-3 rounded shadow">
-        <table class="table table-dark table-hover align-middle">
-            <thead>
+<div class="container-fluid mt-3 px-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-white fw-bold m-0"><i class="fas fa-edit me-2 text-info"></i>MANAGE POINTS</h4>
+        <div class="d-flex gap-2">
+            <a href="{% url 'manual_championship_view' %}" class="btn btn-sm btn-outline-light px-3">
+                <i class="fas fa-eye me-1"></i> VIEW
+            </a>
+            <button id="saveAllBtn" class="btn btn-sm btn-success shadow-sm px-3">
+                <i class="fas fa-save me-1"></i> SAVE ALL
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive rounded shadow-lg border border-secondary">
+        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-striped force-center" style="font-size: 0.75rem;">
+            <thead class="table-header-glass text-white">
                 <tr>
-                    <th>Event ID</th>
+                    <th style="width: 35px;" class="ps-2 col-id border-bottom-0">ID</th>
+                    <th style="min-width: 180px;" class="ps-2 col-event border-bottom-0">Tournament Event</th>
                     {% for team in teams %}
-                    <th colspan="2" class="text-center border-start">{{ team.name }}</th>
+                    <th colspan="2" class="border-start border-light-subtle p-1" style="min-width: 110px; height: 75px;">
+                        <div class="d-flex align-items-center h-100 ps-1">
+                            <div class="flex-shrink-0">
+                                {% if team.name == "Golden Eagles" %}<img src="/media/team_icons/Golden_Eagles-removebg-preview.png" class="header-logo">
+                                {% elif team.name == "Rising Phoenix" %}<img src="/media/team_icons/Rising_Phoenix-removebg-preview.png" class="header-logo">
+                                {% elif team.name == "Flying Phantoms" %}<img src="/media/team_icons/Flying_Phantoms-removebg-preview.png" class="header-logo">
+                                {% elif team.name == "Royal Warriors" %}<img src="/media/team_icons/Royal_Warriors-removebg-preview.png" class="header-logo">
+                                {% elif team.name == "Mighty Titans" %}<img src="/media/team_icons/Mighty_Titans-removebg-preview.png" class="header-logo">
+                                {% elif team.name == "Super Rangers" %}<img src="/media/team_icons/Super_Rangers-removebg-preview.png" class="header-logo">
+                                {% else %}<i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 20px;"></i>{% endif %}
+                            </div>
+                            <div class="ms-2 text-start team-label">{{ team.name|upper }}</div>
+                        </div>
+                    </th>
                     {% endfor %}
-                    <th>Action</th>
                 </tr>
-                <tr>
-                    <th></th>
-                    {% for team in teams %}<th class="small border-start">Pos</th><th class="small">Pts</th>{% endfor %}
-                    <th></th>
+                <tr class="small text-center header-sub-row">
+                    <th class="border-top-0"></th><th class="border-top-0"></th>
+                    {% for team in teams %}
+                    <th class="border-start border-light-subtle py-1">P</th><th class="py-1">Pts</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for res in results %}
-                <form method="POST" class="ajax-form">
-                <tr>
-                    <td><input type="text" name="name" value="{{ res.event_name }}" class="form-control form-control-sm bg-secondary text-white border-0"></td>
-                    <input type="hidden" name="event_id" value="{{ res.event_id }}">
-                    {% for team in teams %}
-                    <td class="border-start">
-                        <input type="text" name="pos_{{ team.code }}" value="{{ res.results_data|default:''|get_item:team.code|get_item:'pos' }}" class="form-control form-control-sm w-50">
-                    </td>
-                    <td>
-                        <input type="number" name="pts_{{ team.code }}" value="{{ res.results_data|default:''|get_item:team.code|get_item:'pts' }}" class="form-control form-control-sm">
-                    </td>
-                    {% endfor %}
-                    <td><button type="submit" class="btn btn-sm btn-primary">Save</button></td>
+                <tr class="entry-row">
+                    <form class="ajax-save-form" method="POST" action="{% url 'manual_leaderboard_entry' %}">
+                        {% csrf_token %}
+                        <td class="col-id ps-2 text-info small fw-bold text-start">{{ res.event_id }}</td>
+                        <td class="col-event fw-bold ps-2 text-start">
+                            <input type="hidden" name="event_id" value="{{ res.event_id }}">
+                            <input type="hidden" name="event_name" value="{{ res.event_name }}">
+                            {% if res.event_id == 1 %}Badminton - Event 1
+                            {% elif res.event_id == 2 %}Badminton - Event 2
+                            {% elif res.event_id == 3 %}Bridge - Open
+                            {% elif res.event_id == 4 %}Pickleball - Doubles
+                            {% elif res.event_id == 5 %}Snooker - Singles
+                            {% elif res.event_id == 6 %}Snooker - Doubles
+                            {% elif res.event_id == 7 %}Squash - Singles 1
+                            {% elif res.event_id == 8 %}Squash - Singles 2
+                            {% elif res.event_id == 9 %}Swimming - Men FS
+                            {% elif res.event_id == 10 %}Swimming - Wmn FS 1
+                            {% elif res.event_id == 11 %}Swimming - Wmn FS 2
+                            {% elif res.event_id == 12 %}TT - Doubles Men
+                            {% elif res.event_id == 13 %}TT - Singles Men
+                            {% elif res.event_id == 14 %}TT - Singles Women
+                            {% elif res.event_id == 15 %}Tennis - Singles Men
+                            {% elif res.event_id == 16 %}Tennis - Doubles 1
+                            {% elif res.event_id == 17 %}Tennis - Doubles 2
+                            {% else %}{{ res.event_name }}{% endif %}
+                        </td>
+                        {% for team in teams %}
+                        {% with team_data=res.results_data|get_item:team.code %}
+                        <td class="border-start border-secondary-subtle px-1">
+                            <input type="text" name="pos_{{ team.code }}" value="{{ team_data.pos|default:'' }}" class="form-control form-control-sm bg-dark text-white text-center border-secondary entry-box" placeholder="P">
+                        </td>
+                        <td class="px-1" style="background: rgba(255,255,255,0.05);">
+                            <input type="number" name="pts_{{ team.code }}" value="{{ team_data.pts|default:0 }}" class="form-control form-control-sm bg-dark text-white text-center border-secondary entry-box" placeholder="0">
+                        </td>
+                        {% endwith %}
+                        {% endfor %}
+                    </form>
                 </tr>
-                </form>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+document.getElementById('saveAllBtn').addEventListener('click', async function() {
+    const btn = this;
+    const forms = Array.from(document.querySelectorAll('.ajax-save-form'));
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> SAVING...';
+
+    for (const form of forms) {
+        try {
+            await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+        } catch (err) {
+            console.error("Save failed:", err);
+        }
+    }
+
+    // Reset button to normal state
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save me-1"></i> SAVE ALL';
+});
+</script>
+
+<style>
+    .force-center th, .force-center td { text-align: center !important; }
+    .force-center .col-id, .force-center .col-event, .force-center td:nth-child(1), .force-center td:nth-child(2) { text-align: left !important; }
+    .header-logo { height: 35px; width: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
+    .team-label { font-size: 0.65rem; color: white; font-weight: 800; display: inline-block; white-space: normal; word-spacing: 100vw; width: 65px; }
+    .entry-box { font-size: 0.8rem; padding: 2px 1px !important; width: 38px !important; border-radius: 2px; height: 26px; }
+    .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%) !important; }
+    .header-sub-row { background: rgba(0, 0, 0, 0.3); }
+    .entry-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.03); }
+</style>
 {% endblock %}

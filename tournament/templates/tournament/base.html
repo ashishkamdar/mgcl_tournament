@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MGCL Tournament</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* SHARED DARK THEME */
         :root {
             --bg-color: #0f172a;
             --text-main: #ffffff;
             --accent: #3b82f6;
+            --secondary: #64748b;
             --card-bg: #1e293b;
+            --nav-bg: rgba(15, 23, 42, 0.9);
         }
         body {
             margin: 0;
@@ -18,33 +20,113 @@
             background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
             color: var(--text-main);
             min-height: 100vh;
+            padding-top: 80px; /* Space for fixed navbar */
         }
-        .board {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
+
+        /* NAVIGATION BAR */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: var(--nav-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
         }
+        .nav-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+        }
+        .nav-logo {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+        .nav-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        /* BUTTONS & ICONS */
         .btn {
             background: var(--accent);
             color: white;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 8px;
             text-decoration: none;
-            font-weight: bold;
-            display: inline-block;
-            border: none;
-            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
         }
-        .btn:hover { opacity: 0.9; }
-        
-        /* Form & Input Styles */
-        input[type="checkbox"] { accent-color: var(--accent); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent);
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-logout {
+            background: #ef4444; /* Red for logout */
+        }
+
+        .board {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
 
-    {% block content %}
-    {% endblock %}
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{% url 'login_selection' %}" class="nav-logo">🏆 MGCL 2026</a>
+            
+            <div class="nav-group">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'fixtures' %}" class="btn btn-outline" title="Fixtures">
+                        <i class="fas fa-calendar-alt"></i> <span>Fixtures</span>
+                    </a>
+                    <a href="{% url 'leaderboard' %}" class="btn btn-outline" title="Leaderboard">
+                        <i class="fas fa-list-ol"></i> <span>Points</span>
+                    </a>
+                    
+                    <a href="{% url 'manual_championship_view' %}" class="btn" title="View Championship">
+                        <i class="fas fa-trophy"></i> <span>Championship</span>
+                    </a>
+                    
+                    {% if user.is_staff %}
+                    <a href="{% url 'manual_leaderboard_entry' %}" class="btn btn-outline" title="Manage Data">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                    {% endif %}
+
+                    <a href="{% url 'custom_logout' %}" class="btn btn-logout" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="board">
+        {% block content %}
+        {% endblock %}
+    </div>
 
 </body>
 </html>

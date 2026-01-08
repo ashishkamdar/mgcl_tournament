@@ -14,7 +14,8 @@ from tournament.models import (
     BridgeGroupResult,
     Team,
     SwimmingResult,
-    Player
+    Player,
+    ManualEventResult
 )
 from tournament.engine import update_championship, is_placeholder_match
 
@@ -250,17 +251,18 @@ def manual_leaderboard_entry(request):
     results = ManualEventResult.objects.all()
     return render(request, "tournament/manual_entry.html", {"teams": teams, "results": results})
 
-@login_required
+# REMOVED @login_required to make this public
 def manual_championship_view(request):
-    """The final beautiful read-only table."""
+    """The final beautiful read-only table accessible to everyone."""
     teams = Team.objects.all().order_by('code')
     results = ManualEventResult.objects.all()
     
-    # Calculate Totals
     team_totals = {t.code: 0 for t in teams}
     for r in results:
         for t_code, data in r.results_data.items():
-            team_totals[t_code] += int(data.get('pts', 0))
+            pts = data.get('pts', 0)
+            if pts:
+                team_totals[t_code] += int(pts)
 
     return render(request, "tournament/manual_view.html", {
         "teams": teams, 

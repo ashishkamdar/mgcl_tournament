@@ -32,6 +32,17 @@ urlpatterns = [
     path('captain-dashboard/', views.captain_dashboard, name='captain_dashboard'),
     path('match/<int:match_id>/select-squad/', views.select_squad, name='select_squad'),
 
+    # Manual Championship Leaderboard
+    path('championship/manage/', views.manual_leaderboard_entry, name='manual_leaderboard_entry'),
+    path('championship/view/', views.manual_championship_view, name='manual_championship_view'),
+    
+    path('logout/', views.custom_logout, name='custom_logout'),
+
+    # Add these to fix the NoReverseMatch error
+    path('logout/', views.custom_logout, name='custom_logout'),
+    path('championship/manage/', views.manual_leaderboard_entry, name='manual_leaderboard_entry'),
+    path('championship/view/', views.manual_championship_view, name='manual_championship_view'),
+
     # --- SCORING & DATA ---
     path('score/<int:match_id>/', views.score_entry, name='score_entry'),
     path('leaderboard/data/', views.leaderboard_data, name='leaderboard_data'),

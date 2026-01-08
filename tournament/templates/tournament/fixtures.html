@@ -341,6 +341,15 @@ tbody td {
         </select>
         
         <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+        <a href="{% url 'manual_championship_view' %}" class="btn" style="background: #1e40af;" title="View Final Team Positions">
+            <i class="fas fa-trophy"></i> <span>Championship Table</span>
+        </a>
+    
+        {% if user.is_staff %}
+            <a href="{% url 'manual_leaderboard_entry' %}" class="btn btn-secondary" title="Manage Manual Points">
+                <i class="fas fa-edit"></i> <span>Manage Points</span>
+            </a>
+        {% endif %}
     </div>
 
     {% for event in events %}
