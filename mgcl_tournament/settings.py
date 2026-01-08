@@ -34,6 +34,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CSRF_TRUSTED_ORIGINS = ['https://mgcl.areakpi.in', 'https://mgdemo.areakpi.in']
+
 ROOT_URLCONF = 'mgcl_tournament.urls'
 
 TEMPLATES = [
