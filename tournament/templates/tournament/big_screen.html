@@ -1,160 +1,403 @@
-{% extends "tournament/base.html" %}
 {% load tournament_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MGCL Live Display</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 
-{% block header %}{% endblock %}
+<style>
+/* TV MODE STYLES - DYNAMIC THEMING */
+:root {
+    /* DARK MODE (Default) */
+    --bg-color: #0f172a;
+    --header-bg: #1e3a8a;
+    --card-bg: #1e293b;
+    --text-main: #ffffff;
+    --text-muted: #94a3b8;
+    --accent: #3b82f6; 
+    --gold: #eab308;
+    --green: #22c55e;
+    --border: #334155;
+    --progress-bg: #1e293b;
+}
 
-{% block content %}
-<meta http-equiv="refresh" content="20">
+body.light {
+    /* LIGHT MODE */
+    --bg-color: #f8fafc;
+    --header-bg: #2563eb;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --accent: #1d4ed8;
+    --gold: #b45309;
+    --green: #15803d;
+    --border: #e2e8f0;
+    --progress-bg: #e2e8f0;
+}
 
-<div class="container-fluid px-3" style="margin-top: 20px; margin-bottom: 150px;">
-    
-    <div class="text-start mb-4 ps-1">
-        <div class="d-flex align-items-center">
-            <img src="/media/event_logos/MGCL-logo.png" alt="MGCL" style="height: 60px; width: auto; margin-right: 20px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
-            <div>
-                <h2 class="text-white fw-bold m-0 p-0 title-responsive" style="letter-spacing: 2px; text-shadow: 3px 3px 6px rgba(0,0,0,0.7);">
-                    CHAMPIONSHIP STANDINGS
-                </h2>
-                <div class="text-info opacity-75 fw-bold" style="font-size: 0.9rem; margin-top: 5px; letter-spacing: 1px;">
-                    <i class="fas fa-sync-alt fa-spin me-2"></i>LIVE UPDATES - AUTO REFRESHING
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    overflow: hidden; 
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* TOP BAR */
+.tv-header {
+    background: var(--header-bg);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 100;
+    transition: background 0.5s ease;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.event-logo {
+    height: 55px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+}
+
+.tv-header h1 { margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; color: #ffffff; }
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.tv-clock { font-size: 24px; font-weight: 700; color: #ffffff; opacity: 0.9; }
+
+/* THEME TOGGLE ICON */
+.theme-btn {
+    background: transparent;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+.theme-btn:hover { transform: scale(1.2) rotate(15deg); }
+
+/* ICON STYLING */
+.tv-team-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.tv-team-icon {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent);
+    background: rgba(255,255,255,0.05);
+}
+
+.tv-icon-placeholder {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    border: 2px dashed var(--text-muted);
+}
+
+/* SLIDES CONTAINER */
+.content-area {
+    flex: 1;
+    position: relative;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.slide {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0;
+    transform: scale(0.98);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    padding: 40px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none; 
+}
+
+.slide.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.slide-title {
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--accent);
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    text-align: center;
+    border-bottom: 3px solid var(--border);
+    padding-bottom: 10px;
+    width: 100%;
+}
+
+table { width: 100%; border-collapse: separate; border-spacing: 0 15px; }
+th { text-align: left; opacity: 0.6; font-size: 20px; text-transform: uppercase; padding: 0 20px; color: var(--text-main); }
+td { background: var(--card-bg); padding: 15px 20px; font-size: 28px; font-weight: 600; border: 1px solid var(--border); vertical-align: middle; color: var(--text-main); transition: background 0.5s ease; }
+tr td:first-child { border-radius: 10px 0 0 10px; border-left: 5px solid var(--accent); }
+tr td:last-child { border-radius: 0 10px 10px 0; }
+
+.split-view { display: flex; gap: 40px; width: 100%; height: 100%; }
+.half { flex: 1; }
+
+.sport-badge { background: var(--border); color: var(--text-muted); font-size: 18px; padding: 5px 12px; border-radius: 6px; text-transform: uppercase; }
+.score { color: var(--gold); font-size: 36px; font-weight: 800; font-family: monospace; }
+.vs { color: var(--text-muted); margin: 0 15px; font-size: 20px; font-weight: 900; }
+
+.progress-container { height: 8px; background: var(--progress-bg); width: 100%; }
+.progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
+</style>
+</head>
+<body class="dark">
+
+    <div class="tv-header">
+        <div class="header-left">
+            {% with first_m=upcoming.0|default:recent.0 %}
+                {% if first_m.event.logo %}
+                    <img src="{{ first_m.event.logo.url }}" class="event-logo" alt="Event Logo">
+                {% endif %}
+            {% endwith %}
+            <h1>MGCL Live Center</h1>
+        </div>
+        <div class="header-right">
+            <button class="theme-btn" onclick="toggleTheme()" id="theme-icon">🌗</button>
+            <a href="{% url 'logout' %}" style="text-decoration: none; font-size: 24px; margin-right: 10px;" title="Logout">🚪</a>
+            <div class="tv-clock" id="clock">{% now "H:i" %}</div>
+        </div>
+    </div>
+
+    <div class="content-area">
+
+        <div class="slide active" id="slide-1">
+            <div class="slide-title">Championship Standings</div>
+            <div class="split-view">
+                <div class="half">
+                    <h2 style="text-align:center; color: var(--text-muted);">GROUP A</h2>
+                    <table>
+                        <thead><tr><th>Rk</th><th>Team</th><th style="text-align:right;">Pts</th></tr></thead>
+                        <tbody>
+                            {% for s in standings_a %}
+                            <tr>
+                                <td style="width:60px; text-align:center;">{{ forloop.counter }}</td>
+                                <td>
+                                    <div class="tv-team-wrapper">
+                                        {% if s.team.icon %}
+                                            <img src="{{ s.team.icon.url }}" class="tv-team-icon">
+                                        {% else %}
+                                            <div class="tv-icon-placeholder">🛡️</div>
+                                        {% endif %}
+                                        <span>{{ s.team.name }}</span>
+                                    </div>
+                                </td>
+                                <td style="text-align:right; color:var(--gold);">{{ s.total_points }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="half">
+                    <h2 style="text-align:center; color: var(--text-muted);">GROUP B</h2>
+                    <table>
+                        <thead><tr><th>Rk</th><th>Team</th><th style="text-align:right;">Pts</th></tr></thead>
+                        <tbody>
+                            {% for s in standings_b %}
+                            <tr>
+                                <td style="width:60px; text-align:center;">{{ forloop.counter }}</td>
+                                <td>
+                                    <div class="tv-team-wrapper">
+                                        {% if s.team.icon %}
+                                            <img src="{{ s.team.icon.url }}" class="tv-team-icon">
+                                        {% else %}
+                                            <div class="tv-icon-placeholder">🛡️</div>
+                                        {% endif %}
+                                        <span>{{ s.team.name }}</span>
+                                    </div>
+                                </td>
+                                <td style="text-align:right; color:var(--gold);">{{ s.total_points }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="table-responsive shadow-lg border border-secondary rounded custom-scrollbar">
-        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-striped force-center main-table-logic" style="font-size: 1rem; width: 100%;">
-            <thead class="table-header-glass text-white">
-                <tr>
-                    <th style="width: 50px; text-align: left;" class="ps-3 border-bottom-0 border-end border-secondary">ID</th>
-                    <th style="min-width: 180px; text-align: left;" class="ps-3 border-bottom-0">Tournament Event</th>
-                    
-                    {% for team in teams %}
-                    <th colspan="2" class="border-start border-light-subtle p-0" style="height: 100px; min-width: 160px;">
-                        <div class="d-flex align-items-center h-100 ps-2">
-                            <div class="flex-shrink-0">
-                                {% if team.name == "Golden Eagles" %}
-                                    <img src="/media/team_icons/Golden_Eagles-removebg-preview.png" class="header-logo">
-                                {% elif team.name == "Rising Phoenix" %}
-                                    <img src="/media/team_icons/Rising_Phoenix-removebg-preview.png" class="header-logo">
-                                {% elif team.name == "Flying Phantoms" %}
-                                    <img src="/media/team_icons/Flying_Phantoms-removebg-preview.png" class="header-logo">
-                                {% elif team.name == "Royal Warriors" %}
-                                    <img src="/media/team_icons/Royal_Warriors-removebg-preview.png" class="header-logo">
-                                {% elif team.name == "Mighty Titans" %}
-                                    <img src="/media/team_icons/Mighty_Titans-removebg-preview.png" class="header-logo">
-                                {% elif team.name == "Super Rangers" %}
-                                    <img src="/media/team_icons/Super_Rangers-removebg-preview.png" class="header-logo">
+        <div class="slide" id="slide-2">
+            <div class="slide-title">Coming Up Next</div>
+            {% if upcoming %}
+            <table style="width: 90%;">
+                <thead><tr><th>Time</th><th>Sport</th><th>Matchup</th></tr></thead>
+                <tbody>
+                    {% for m in upcoming %}
+                    <tr>
+                        <td style="white-space: nowrap;">
+                            <span style="color: var(--gold); font-weight:700; margin-right:12px; font-size:26px;">
+                                {{ m.date|date:"M j" }}
+                            </span>
+                            <span style="color:var(--accent); font-weight:900; font-size:32px;">
+                                {{ m.time|time:"H:i" }}
+                            </span>
+                        </td>
+                        <td style="width:200px;"><span class="sport-badge">{{ m.event.sport.name }}</span></td>
+                        <td>
+                            <div class="tv-team-wrapper">
+                                {% if m.team1 %}
+                                    {% if m.team1.icon %}<img src="{{ m.team1.icon.url }}" class="tv-team-icon">{% endif %}
+                                    <span>{{ m.team1.name }}</span>
                                 {% else %}
-                                    <i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 35px;"></i>
+                                    <span style="opacity:0.5;">{{ m.opponent_rule }}</span>
+                                {% endif %}
+                                <span class="vs">VS</span>
+                                {% if m.team2 %}
+                                    {% if m.team2.icon %}<img src="{{ m.team2.icon.url }}" class="tv-team-icon">{% endif %}
+                                    <span>{{ m.team2.name }}</span>
                                 {% endif %}
                             </div>
-                            <div class="ms-2 text-start lh-1 fw-bold team-label">
-                                {{ team.name|upper }}
-                            </div>
-                        </div>
-                    </th>
+                        </td>
+                    </tr>
                     {% endfor %}
-                </tr>
-                <tr class="small text-center header-sub-row" style="background: rgba(0,0,0,0.5);">
-                    <th class="border-top-0 border-end border-secondary"></th>
-                    <th class="border-top-0"></th>
-                    {% for team in teams %}
-                    <th class="border-start border-light-subtle py-2">POS</th>
-                    <th class="py-2">PTS</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for res in results %}
-                <tr class="championship-row">
-                    <td class="ps-3 text-info fw-bold text-start border-end border-secondary">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-3 text-start text-truncate" style="font-size: 0.95rem;">
-                        {% if res.event_id == 1 %}Badminton 1
-                        {% elif res.event_id == 2 %}Badminton 2
-                        {% elif res.event_id == 3 %}Bridge
-                        {% elif res.event_id == 4 %}Pickleball
-                        {% elif res.event_id == 5 %}Snooker Sgl
-                        {% elif res.event_id == 6 %}Snooker Dbl
-                        {% elif res.event_id == 7 %}Squash 1
-                        {% elif res.event_id == 8 %}Squash 2
-                        {% elif res.event_id == 9 %}Swim Men
-                        {% elif res.event_id == 10 %}Swim Wmn 1
-                        {% elif res.event_id == 11 %}Swim Wmn 2
-                        {% elif res.event_id == 12 %}TT Dbl Men
-                        {% elif res.event_id == 13 %}TT Sgl Men
-                        {% elif res.event_id == 14 %}TT Sgl Wmn
-                        {% elif res.event_id == 15 %}Tennis Sgl
-                        {% elif res.event_id == 16 %}Tennis Dbl 1
-                        {% elif res.event_id == 17 %}Tennis Dbl 2
-                        {% else %}{{ res.event_name }}{% endif %}
-                    </td>
-                    {% for team in teams %}
-                    {% with team_data=res.results_data|get_item:team.code %}
-                    <td class="border-start border-secondary-subtle {% if team_data.pos == '1' %}bg-warning text-dark fw-bold shadow-inset{% elif team_data.pos == '2' %}bg-secondary text-white{% elif team_data.pos == '3' %}bg-danger text-white{% endif %}">
-                        {{ team_data.pos|default:"-" }}
-                    </td>
-                    <td style="background: rgba(255,255,255,0.05); font-weight: bold;">
-                        {{ team_data.pts|default:"0" }}
-                    </td>
-                    {% endwith %}
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot class="table-footer-accent fw-bold border-top border-warning" style="background: #000 !important;">
-                <tr class="text-warning">
-                    <td class="border-0 border-end border-secondary"></td> 
-                    <td class="text-end pe-3 fs-5 border-0">GRAND TOTAL:</td> 
-                    {% for team in teams %}
-                    <td class="border-start border-warning-subtle"></td>
-                    <td class="fs-4 text-center" style="text-shadow: 0 0 15px rgba(255,193,7,0.6);">
-                        {% if team_totals.items %}{{ team_totals|get_item:team.code }}{% else %}0{% endif %}
-                    </td>
-                    {% endfor %}
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-</div>
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
 
-<div class="qr-footer-container d-none d-lg-flex align-items-center">
-    <div class="text-end me-4">
-        <div class="text-white fw-bold" style="font-size: 1rem; line-height: 1.3; text-shadow: 2px 2px 8px #000;">
-            SCAN FOR LIVE UPDATES<br>ON THE GO
+        <div class="slide" id="slide-3">
+            <div class="slide-title">Latest Results</div>
+            {% if recent %}
+            <table style="width: 95%;">
+                <thead><tr><th>Sport</th><th>Match</th><th style="text-align:right;">Result</th></tr></thead>
+                <tbody>
+                    {% for m in recent %}
+                    <tr>
+                        <td style="width:200px;"><span class="sport-badge">{{ m.event.sport.name }}</span></td>
+                        <td>
+                            <div class="tv-team-wrapper">
+                                {% if m.team1.icon %}<img src="{{ m.team1.icon.url }}" class="tv-team-icon">{% endif %}
+                                <span>{{ m.team1.name }}</span>
+                                <span class="vs">vs</span>
+                                <span>{{ m.team2.name }}</span>
+                                {% if m.team2.icon %}<img src="{{ m.team2.icon.url }}" class="tv-team-icon">{% endif %}
+                            </div>
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="score">{{ m.team1_score }} - {{ m.team2_score }}</span>
+                            <div style="font-size:16px; color:var(--green); font-weight:900;">🏆 {{ m.winner }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
         </div>
     </div>
-    <div class="bg-white p-2 rounded shadow-lg" style="width: 120px; height: 120px; border: 3px solid #1e40af;">
-        <img id="qrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=104x104&data={{ request.build_absolute_uri }}" 
-             alt="Scan for Mobile" style="width: 104px; height: 104px;">
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progress"></div>
     </div>
-</div>
 
-<style>
-    /* DESKTOP / BIG SCREEN LOGIC */
-    @media (min-width: 1200px) {
-        .main-table-logic { table-layout: fixed; }
-        .table-responsive { overflow-x: hidden; }
-        .title-responsive { font-size: 2.5rem; }
+<script>
+    // CONFIG
+    const slideDuration = 10000;
+    const refreshInterval = 120000;
+
+    let slides = document.querySelectorAll('.slide');
+    let currentSlide = 0;
+    let progressBar = document.getElementById('progress');
+    let progress = 0;
+
+    // THEME TOGGLE LOGIC
+    function toggleTheme() {
+        const body = document.body;
+        const icon = document.getElementById('theme-icon');
+        
+        if (body.classList.contains('dark')) {
+            body.classList.replace('dark', 'light');
+            localStorage.setItem("mgcl-tv-theme", "light");
+            icon.innerText = "☀️";
+        } else {
+            body.classList.replace('light', 'dark');
+            localStorage.setItem("mgcl-tv-theme", "dark");
+            icon.innerText = "🌗";
+        }
     }
 
-    /* MOBILE LOGIC */
-    @media (max-width: 1199px) {
-        .main-table-logic { table-layout: auto; }
-        .table-responsive { overflow-x: auto; }
-        .title-responsive { font-size: 1.5rem; }
-        .qr-footer-container { display: none !important; } /* Hide QR on mobile since they are already on mobile */
-    }
+    // CLOCK
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }, 1000);
 
-    .qr-footer-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
-    .table-responsive { width: 100%; }
-    .force-center th, .force-center td { text-align: center !important; }
-    .force-center td:nth-child(2), .force-center th:nth-child(2) { text-align: left !important; }
-    .header-logo { height: 50px; width: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)); }
-    .team-label { font-size: 0.8rem; color: white; display: inline-block; white-space: normal; line-height: 1.1; width: 85px; }
-    .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%) !important; }
-    .table-footer-accent { background: #020617 !important; border-top: 4px solid #fbbf24 !important; }
-    .championship-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.04); }
-    .championship-row:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.25); }
-</style>
-{% endblock %}
+    // SLIDE ROTATOR
+    setInterval(() => {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
+        progress = 0;
+    }, slideDuration);
+
+    // PROGRESS BAR
+    setInterval(() => {
+        progress += 100 / (slideDuration / 100); 
+        if (progress > 100) progress = 0;
+        progressBar.style.width = progress + "%";
+    }, 100);
+
+    // INIT
+    window.onload = () => {
+        const savedTheme = localStorage.getItem("mgcl-tv-theme");
+        const icon = document.getElementById('theme-icon');
+        if (savedTheme === "light") {
+            document.body.classList.replace('dark', 'light');
+            icon.innerText = "☀️";
+        }
+    };
+
+    // AUTO REFRESH
+    setTimeout(() => {
+        location.reload();
+    }, refreshInterval);
+</script>
+
+</body>
+</html>
