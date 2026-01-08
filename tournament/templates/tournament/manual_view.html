@@ -22,12 +22,12 @@
         </div>
     </div>
 
-    <div class="table-responsive shadow-lg border border-secondary rounded" style="overflow-x: hidden;">
-        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-striped force-center" style="font-size: 0.82rem; width: 100%; table-layout: fixed;">
+    <div class="table-responsive shadow-lg border border-secondary rounded" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-striped force-center" style="font-size: 0.82rem; min-width: 900px; width: 100%; table-layout: auto;">
             <thead class="table-header-glass text-white">
                 <tr>
                     <th style="width: 45px; text-align: left;" class="ps-2 border-bottom-0 border-end border-secondary">ID</th>
-                    <th style="width: 160px; text-align: left;" class="ps-2 border-bottom-0">Tournament Event</th>
+                    <th style="min-width: 160px; text-align: left;" class="ps-2 border-bottom-0">Tournament Event</th>
                     
                     {% for team in teams %}
                     <th colspan="2" class="border-start border-light-subtle p-0" style="height: 85px;">
@@ -69,7 +69,7 @@
                 {% for res in results %}
                 <tr class="championship-row">
                     <td class="ps-2 text-info small fw-bold text-start border-end border-secondary">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-2 text-start text-truncate">
+                    <td class="fw-bold ps-2 text-start text-nowrap">
                         {% if res.event_id == 1 %}Badminton 1
                         {% elif res.event_id == 2 %}Badminton 2
                         {% elif res.event_id == 3 %}Bridge
@@ -131,7 +131,10 @@
 </div>
 
 <style>
-    .table-responsive { width: 100%; overflow-x: hidden; }
+    /* Updated to allow scrolling and prevent text wrapping */
+    .table-responsive { width: 100%; overflow-x: auto; display: block; }
+    .table td, .table th { white-space: nowrap; }
+    
     .force-center th, .force-center td { text-align: center !important; }
     .force-center td:nth-child(2), .force-center th:nth-child(2) { text-align: left !important; }
     .header-logo { height: 40px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
