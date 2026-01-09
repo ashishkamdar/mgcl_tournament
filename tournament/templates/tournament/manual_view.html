@@ -30,9 +30,9 @@
                     <th style="text-align: left !important; padding-left: 8px !important; font-size: 0.75rem;" class="border-bottom-0">Tournament Event</th>
                     
                     {% for team in teams %}
-                    <th colspan="2" class="border-start border-light-subtle p-0" style="height: 80px; text-align: center !important;">
-                        <div class="d-flex align-items-center justify-content-center h-100">
-                            <div class="flex-shrink-0">
+                    <th colspan="2" class="border-start border-light-subtle p-0" style="height: 100px; text-align: center !important;">
+                        <div class="d-flex flex-column align-items-center justify-content-center h-100 py-2">
+                            <div class="flex-shrink-0 mb-2">
                                 {% if team.name == "Golden Eagles" %}
                                     <img src="/media/team_icons/Golden_Eagles-removebg-preview.png" class="header-logo">
                                 {% elif team.name == "Rising Phoenix" %}
@@ -46,10 +46,10 @@
                                 {% elif team.name == "Super Rangers" %}
                                     <img src="/media/team_icons/Super_Rangers-removebg-preview.png" class="header-logo">
                                 {% else %}
-                                    <i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 22px;"></i>
+                                    <i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 28px;"></i>
                                 {% endif %}
                             </div>
-                            <div class="ms-1 text-start lh-1 fw-bold team-label">
+                            <div class="text-center fw-bold team-label" style="line-height: 1.3 !important;">
                                 {{ team.name|upper }}
                             </div>
                         </div>
@@ -69,7 +69,7 @@
                 {% for res in results %}
                 <tr class="championship-row">
                     <td class="ps-2 text-info small fw-bold border-end border-secondary" style="text-align: left !important;">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-2 text-nowrap" style="text-align: left !important; font-size: 0.75rem; padding-right: 10px !important;">
+                    <td class="fw-bold ps-2 text-nowrap" style="text-align: left !important; font-size: 0.75rem;">
                         {% if res.event_id == 1 %}Badminton (Singles) 1
                         {% elif res.event_id == 2 %}Badminton (Singles) 2
                         {% elif res.event_id == 3 %}Bridge
@@ -138,18 +138,14 @@
 </div>
 
 <style>
-    .header-logo { height: 32px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
-    .team-label { font-size: 0.62rem; color: white; display: inline-block; white-space: normal; line-height: 1; width: 65px; }
+    .header-logo { height: 45px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+    .team-label { font-size: 0.62rem; color: white; display: inline-block; white-space: normal; width: 75px; }
+    
     .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%) !important; }
     .header-sub-row { background: rgba(0, 0, 0, 0.4); }
     .table-footer-accent { background: #020617 !important; border-top: 2px solid #fbbf24 !important; }
     .championship-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.04); }
     .championship-row:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.18); }
     .qr-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
-
-    /* Ensure no scrollbar is forced on large screens */
-    @media (min-width: 1200px) {
-        .custom-table { width: 100%; }
-    }
 </style>
 {% endblock %}
