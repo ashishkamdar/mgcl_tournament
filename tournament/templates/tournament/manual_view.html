@@ -22,8 +22,8 @@
         </div>
     </div>
 
-    <div class="scroll-container shadow-lg border border-secondary rounded">
-        <table class="table table-dark table-bordered table-sm align-middle mb-0 force-center">
+    <div class="table-responsive shadow-lg border border-secondary rounded">
+        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-table">
             <thead class="table-header-glass text-white">
                 <tr>
                     <th class="id-col border-bottom-0 border-end border-secondary">ID</th>
@@ -31,7 +31,7 @@
                     
                     {% for team in teams %}
                     <th colspan="2" class="team-header-cell border-start border-light-subtle p-0">
-                        <div class="d-flex align-items-center h-100 ps-1">
+                        <div class="d-flex align-items-center justify-content-center h-100">
                             <div class="flex-shrink-0">
                                 {% if team.name == "Golden Eagles" %}
                                     <img src="/media/team_icons/Golden_Eagles-removebg-preview.png" class="header-logo">
@@ -67,34 +67,34 @@
             </thead>
             <tbody>
                 {% for res in results %}
-                <tr class="championship-row">
+                <tr class="championship-row text-center">
                     <td class="ps-2 text-info small fw-bold text-start border-end border-secondary">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-2 text-start text-truncate event-name-cell">
-                        {% if res.event_id == 1 %}Badminton 1
-                        {% elif res.event_id == 2 %}Badminton 2
+                    <td class="fw-bold ps-2 text-start text-nowrap">
+                        {% if res.event_id == 1 %}Badminton (Singles) 1
+                        {% elif res.event_id == 2 %}Badminton (Singles) 2
                         {% elif res.event_id == 3 %}Bridge
                         {% elif res.event_id == 4 %}Pickleball
-                        {% elif res.event_id == 5 %}Snooker Sgl
-                        {% elif res.event_id == 6 %}Snooker Dbl
+                        {% elif res.event_id == 5 %}Snooker (Singles)
+                        {% elif res.event_id == 6 %}Snooker (Doubles)
                         {% elif res.event_id == 7 %}Squash 1
                         {% elif res.event_id == 8 %}Squash 2
-                        {% elif res.event_id == 9 %}Swim Men
-                        {% elif res.event_id == 10 %}Swim Wmn 1
-                        {% elif res.event_id == 11 %}Swim Wmn 2
-                        {% elif res.event_id == 12 %}TT Dbl Men
-                        {% elif res.event_id == 13 %}TT Sgl Men
-                        {% elif res.event_id == 14 %}TT Sgl Wmn
-                        {% elif res.event_id == 15 %}Tennis Sgl
-                        {% elif res.event_id == 16 %}Tennis Dbl 1
-                        {% elif res.event_id == 17 %}Tennis Dbl 2
+                        {% elif res.event_id == 9 %}Swimming (Men)
+                        {% elif res.event_id == 10 %}Swimming (Women) 1
+                        {% elif res.event_id == 11 %}Swimming (Women) 2
+                        {% elif res.event_id == 12 %}Table Tennis (Doubles Men)
+                        {% elif res.event_id == 13 %}Table Tennis (Singles Men)
+                        {% elif res.event_id == 14 %}Table Tennis (Singles Women)
+                        {% elif res.event_id == 15 %}Tennis (Singles)
+                        {% elif res.event_id == 16 %}Tennis (Doubles) 1
+                        {% elif res.event_id == 17 %}Tennis (Doubles) 2
                         {% else %}{{ res.event_name }}{% endif %}
                     </td>
                     {% for team in teams %}
                     {% with team_data=res.results_data|get_item:team.code %}
-                    <td class="score-cell border-start border-secondary-subtle {% if team_data.pos == '1' %}bg-warning text-dark fw-bold shadow-inset{% elif team_data.pos == '2' %}bg-secondary text-white{% elif team_data.pos == '3' %}bg-danger text-white{% endif %}">
+                    <td class="border-start border-secondary-subtle {% if team_data.pos == '1' %}bg-warning text-dark fw-bold shadow-inset{% elif team_data.pos == '2' %}bg-secondary text-white{% elif team_data.pos == '3' %}bg-danger text-white{% endif %}">
                         {{ team_data.pos|default:"-" }}
                     </td>
-                    <td class="score-cell" style="background: rgba(255,255,255,0.03);">
+                    <td style="background: rgba(255,255,255,0.03);">
                         {{ team_data.pts|default:"0" }}
                     </td>
                     {% endwith %}
@@ -103,12 +103,12 @@
                 {% endfor %}
             </tbody>
             <tfoot class="table-footer-accent fw-bold border-top border-warning">
-                <tr class="text-warning">
+                <tr class="text-warning text-center">
                     <td class="border-0 border-end border-secondary"></td> 
                     <td class="text-end pe-2 fs-6 border-0">TOTAL:</td> 
                     {% for team in teams %}
                     <td class="border-start border-warning-subtle"></td>
-                    <td class="text-center score-cell" style="text-shadow: 0 0 10px rgba(255,193,7,0.4);">
+                    <td style="text-shadow: 0 0 10px rgba(255,193,7,0.4);">
                         {% if team_totals.items %}{{ team_totals|get_item:team.code }}{% else %}0{% endif %}
                     </td>
                     {% endfor %}
@@ -138,30 +138,33 @@
 </div>
 
 <style>
-    /* CRITICAL: This prevents the table from shrinking on mobile */
-    .scroll-container {
+    /* Fit to screen without horizontal scrollbar */
+    .table-responsive { 
+        width: 100%; 
+        overflow-x: hidden; 
+    }
+
+    .custom-table {
         width: 100%;
-        overflow-x: auto;
-        display: block;
-        -webkit-overflow-scrolling: touch;
+        table-layout: auto;
+        font-size: 0.8rem;
     }
 
-    .table {
-        min-width: 1200px !important; /* Forces horizontal width so it never squeezes */
-        table-layout: fixed;
-        width: 1200px;
+    /* ONLY Left align ID and Event columns */
+    .id-col { width: 40px; text-align: left !important; }
+    .event-col { text-align: left !important; padding-left: 10px !important; }
+
+    /* Centering logic for everything else */
+    .team-header-cell { height: 85px; text-align: center !important; }
+    .championship-row td { text-align: center; }
+    .championship-row td:nth-child(1), 
+    .championship-row td:nth-child(2) { 
+        text-align: left !important; 
     }
 
-    /* Fixed Column Widths */
-    .id-col { width: 45px; text-align: left !important; }
-    .event-col { width: 180px; text-align: left !important; }
-    .team-header-cell { width: 160px; height: 85px; }
-    .score-cell { width: 40px; }
-
-    /* Visual Styles */
-    .force-center th, .force-center td { text-align: center; }
-    .header-logo { height: 40px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
-    .team-label { font-size: 0.68rem; color: white; display: inline-block; white-space: normal; line-height: 1; width: 75px; }
+    .header-logo { height: 35px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+    .team-label { font-size: 0.65rem; color: white; display: inline-block; white-space: normal; line-height: 1.1; width: 70px; }
+    
     .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%) !important; }
     .header-sub-row { background: rgba(0, 0, 0, 0.4); }
     .table-footer-accent { background: #020617 !important; border-top: 2px solid #fbbf24 !important; }
@@ -173,6 +176,13 @@
         bottom: 20px; 
         right: 20px; 
         z-index: 1000;
+    }
+
+    /* Mobile specific tweaks to prevent squeezing without scroll */
+    @media (max-width: 768px) {
+        .custom-table { font-size: 0.7rem; }
+        .team-label { width: 55px; font-size: 0.55rem; }
+        .header-logo { height: 25px; }
     }
 </style>
 {% endblock %}
