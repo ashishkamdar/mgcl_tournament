@@ -70,12 +70,52 @@ def fixtures(request):
         bridge_rankings.setdefault(r.event_id, {})[r.group] = r
     return render(request, "tournament/fixtures.html", {"events": events, "bridge_rankings": bridge_rankings})
 
+# def big_screen(request):
+#     """Optimized for the arena display. Fixes duplicate match entries."""
+#     # Get standings
+#     standings_a = ChampionshipStanding.objects.filter(team__pool="A").order_by("-total_points", "-gold")
+#     standings_b = ChampionshipStanding.objects.filter(team__pool="B").order_by("-total_points", "-gold")
+    
+#     # UPCOMING: Distinct unique matches only
+#     upcoming = Match.objects.filter(
+#         completed=False
+#     ).select_related(
+#         'team1', 'team2', 'event', 'event__sport'
+#     ).order_by('date', 'time').distinct()[:6]
+    
+#     # RECENT: Distinct unique matches only
+#     recent = Match.objects.filter(
+#         completed=True
+#     ).select_related(
+#         'team1', 'team2', 'event', 'event__sport'
+#     ).order_by('-date', '-time').distinct()[:6]
+    
+#     return render(request, "tournament/big_screen.html", {
+#         "standings_a": standings_a, 
+#         "standings_b": standings_b, 
+#         "upcoming": upcoming, 
+#         "recent": recent
+#     })
+
 def big_screen(request):
-    standings_a = ChampionshipStanding.objects.filter(team__pool="A").order_by("-total_points", "-gold")
-    standings_b = ChampionshipStanding.objects.filter(team__pool="B").order_by("-total_points", "-gold")
-    upcoming = Match.objects.filter(completed=False).select_related('team1', 'team2', 'event', 'event__sport').order_by('date', 'time')[:6]
-    recent = Match.objects.filter(completed=True).select_related('team1', 'team2', 'event', 'event__sport').order_by('-date', '-time')[:6]
-    return render(request, "tournament/big_screen.html", {"standings_a": standings_a, "standings_b": standings_b, "upcoming": upcoming, "recent": recent})
+    """
+    Native Big Screen view for development.
+    Groups all matches by their sport name to render sport-by-sport slides.
+    """
+    # Order matches by sport name, then date and time
+    all_matches = Match.objects.select_related('team1', 'team2', 'event', 'event__sport').order_by('event__sport__name', 'date', 'time')
+    
+    # Construct a dictionary: { 'Sport Name': [List of Matches] }
+    grouped_fixtures = {}
+    for match in all_matches:
+        sport_name = match.event.sport.name
+        if sport_name not in grouped_fixtures:
+            grouped_fixtures[sport_name] = []
+        grouped_fixtures[sport_name].append(match)
+        
+    return render(request, "tournament/big_screen.html", {
+        "grouped_fixtures": grouped_fixtures,
+    })
 
 # ============================
 # Captain's Portal

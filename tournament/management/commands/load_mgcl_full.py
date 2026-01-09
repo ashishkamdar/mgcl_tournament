@@ -1,13 +1,13 @@
 import random
-import re # Added for text parsing
+import re
 from django.db.models import Q
-from django.db.models.signals import post_save # Required to trigger engine logic
+from django.db.models.signals import post_save
 from django.core.management.base import BaseCommand
 from datetime import date, time
 from tournament.models import Sport, Team, Event, Match, Player, ChampionshipStanding
 
 class Command(BaseCommand):
-    help = "Load full official MGCL 2026 schedule with parsed Teams and Random Rosters"
+    help = "Load MGCL 2026 schedule with verified player pairs from Organiser CSV"
 
     def handle(self, *args, **kwargs):
         self.stdout.write("🔁 Resetting MGCL database...")
@@ -21,7 +21,7 @@ class Command(BaseCommand):
         Sport.objects.all().delete()
 
         # ======================================================
-        # 2. TEAMS
+        # 2. TEAMS (Verified)
         # ======================================================
         teams_data = [
             ("T1", "Golden Eagles", "Niyam Turakhia & Vipul Shah", "A"),
@@ -32,96 +32,82 @@ class Command(BaseCommand):
             ("T6", "Super Rangers", "Atul Shah & Nitin Kothari", "B"),
         ]
 
-        # Map Name -> Team Object for easy lookup
         team_lookup = {}
         team_objs = {}
         
         for code, name, owners, pool in teams_data:
             t = Team.objects.create(code=code, name=name, owners=owners, pool=pool)
             team_objs[code] = t
-            team_lookup[name.lower()] = t # Case-insensitive lookup
-            
+            team_lookup[name.lower()] = t 
             ChampionshipStanding.objects.create(team=t, total_points=0, gold=0, silver=0, bronze=0)
-        
-        self.stdout.write("✅ Teams & Owners loaded")
 
         # ======================================================
-        # 3. REAL PLAYER ROSTERS
+        # 3. MANUALLY VERIFIED PLAYER PAIRS (Match-by-Match from CSV)
         # ======================================================
-        full_roster_data = [
-            # --- T1 Golden Eagles ---
-            ("T1", "Badminton", "Ashish Kamdar"), ("T1", "Badminton", "Bhavin Doshi"), ("T1", "Badminton", "Deepak Shah"), ("T1", "Badminton", "Pushkar Kulkarni"),
-            ("T1", "Bridge", "Bankim Mehta"), ("T1", "Bridge", "Bipin Savla"), ("T1", "Bridge", "Hemant shah"), ("T1", "Bridge", "Himanshu Sanghavi"),
-            ("T1", "Pickleball", "Ankit Gala"), ("T1", "Pickleball", "Dev S Thakkar"),
-            ("T1", "Snooker", "Ajay Thakar"), ("T1", "Snooker", "Ashmi Chheda"), ("T1", "Snooker", "Shomeer Varadkar"),
-            ("T1", "Squash", "Ashish Gavankar"), ("T1", "Squash", "Pranay Motta"),
-            ("T1", "Swimming", "Jaini Gogri"), ("T1", "Swimming", "Shloka Motta"), ("T1", "Swimming", "Vedant Ajmera"), ("T1", "Swimming", "Lakshmi Raja"),
-            ("T1", "TT", "Lalit Desai"), ("T1", "TT", "Mahendra Sharma"), ("T1", "TT", "Pankaj Naik"),
-            ("T1", "Tennis", "Himanshu Ashar"), ("T1", "Tennis", "Hitesh Parekh"), ("T1", "Tennis", "Jayesh Shah"), ("T1", "Tennis", "Nitin Ashar"), ("T1", "Tennis", "Sandeep Parikh"),
+        official_pairs = {
+            "T1": {
+                "Badminton": ["Ashish Kamdar & Pushkar Kulkarni", "Bhavin Doshi & Deepak Shah"],
+                "Bridge": ["Bankim Mehta & Bipin Savla & Hemant shah & Himanshu Sanghavi"],
+                "Pickleball": ["Ankit Gala & Dev S Thakkar"],
+                "Snooker": ["Ashmi Chheda", "Ajay Thakar & Shomeer Varadkar"],
+                "Squash": ["Ashish Gavankar", "Pranay Motta"],
+                "Swimming": ["Vedant Ajmera", "Shloka Motta", "Jaini Gogri"],
+                "TT": ["Pankaj Naik & Mahendra Sharma", "Lalit Desai", "Lakshmi Raja"],
+                "Tennis": ["Sandeep Parikh", "Himanshu Ashar & Jayesh Shah", "Hitesh Parekh & Nitin Ashar"]
+            },
+            "T2": {
+                "Badminton": ["Miheer Moghe & Pujan Shah", "Rakesh Shah & Rajesh Mansinghani"],
+                "Bridge": ["Monica Advani & Neha Mehta & Deepak Mehta & Raj Kailat"],
+                "Pickleball": ["Parth Goyal & Sanjog Lunkad"],
+                "Snooker": ["Poras Shah", "Percy Patel & Ninad Aolaskar"],
+                "Squash": ["Chiraag Shah", "Krishna Rao"],
+                "Swimming": ["Pankaj Shah", "Sharvari R. Desai", "Riya Bawkar"],
+                "TT": ["Ajit Gandhi & Percy Patel", "Janak Thakkar", "Sushma Shah"],
+                "Tennis": ["Eshit Sheth", "Rajiv Kamdar & Srinivasan Ganesan", "Anil Tahiliani & Nanik Rupani"]
+            },
+            "T3": {
+                "Badminton": ["Priyank Dedhia & S Rammohan Rao", "Yashad Moghe & Purav Parekh"],
+                "Bridge": ["Pankaj Tanna & Viresh Kamdar & Sunil Desai & Yogeshwar Banavali"],
+                "Pickleball": ["Bhumika Shah & Chirag Kenia"],
+                "Snooker": ["Aditya Agarwal", "Amishi Chheda & Mehrnosh Billimoria"],
+                "Squash": ["Raj Goshar", "Rohan Vora"],
+                "Swimming": ["Hridaan Nisar", "Hetanshi Kamdar", "Malvika Anand Iyer"],
+                "TT": ["Kartik Kumar raja & Nagendra Prabhu", "Alok Shah", "Ira Naik"],
+                "Tennis": ["Harsh Gandhi", "Rohan Bawkar & Sarju Jhaveri", "Nishit Mehta & Sanjiv Shah"]
+            },
+            "T4": {
+                "Badminton": ["Hormuzd Madan & Rukshad Daruvala", "Jenil Gogri & Ashwin Mulchandani"],
+                "Bridge": ["Paras Savla & Shruti Savla & Ravindra Joglekar & Sonali Sheth"],
+                "Pickleball": ["Jehan Mulchandani & Nimesh Kampani"],
+                "Snooker": ["Amit Thakkar", "Jatin N Sadarangani & Vikram Chande"],
+                "Squash": ["Sumer Mehta", "Abhishek Samir Bhuta"],
+                "Swimming": ["Jai Dhanani", "Aarthi Shetty", "Ruchi Shah"],
+                "TT": ["Pranav Parekh & Ajit Bodas", "Bhavik Visaria", "Natasha Sarkar"],
+                "Tennis": ["Siddharth Chheda", "Dharmesh Hemani & Rokshad Palkhivala", "Atul Parekh & Christopher Lopes"]
+            },
+            "T5": {
+                "Badminton": ["Kartik Mody & Akshay Pawar", "Rajat Bhalla & Anshul Trivedi"],
+                "Bridge": ["Mahendra G Ved & Dinyar Wadia & Shilpi Savla & Dr. Medha Ambiye"],
+                "Pickleball": ["Pranav Rajguru & Shubh Gautam Pomani"],
+                "Snooker": ["Devendra Joshi", "Deepak S Sukhija & Nishit Chandan"],
+                "Squash": ["Khushru Tampal", "Param kiran Maru"],
+                "Swimming": ["Shashank Bawkar", "Niyati S Kenia", "Sanyogita Aolaskar"],
+                "TT": ["Paresh Ghatalia & Rajesh Dave", "Raman Iyer", "Sharmila Mauskar"],
+                "Tennis": ["Tej Mulchandani", "Aditya Barve & Prasanna Shah", "Kartik B Sheth & Rajesh Kishnani"]
+            },
+            "T6": {
+                "Badminton": ["Prashant Gada & Suketu sheth", "Aakash Parikh & Palak shah"],
+                "Bridge": ["Priya Gupta & Dr.Mita Doshi & Meena Tanna & Cyrus Dalal"],
+                "Pickleball": ["Chaitanya Rao & Deep Karani"],
+                "Snooker": ["Arun Agrawal", "Darshan Shah & Naresh sadarangani"],
+                "Squash": ["Khush Gautam Pomani", "Dev Sheth"],
+                "Swimming": ["Chaitanya Rao", "Pooja Moghe", "Shikha kanakia"],
+                "TT": ["Sharukh Karkaria & Vinit Gandhi", "Kaushik Pithadia", "Gauri Parulkar"],
+                "Tennis": ["Jvalant Sampat", "Pradip Bhat & Cusrow Sadri", "Mahesh Shah & Umesh Ahuja"]
+            }
+        }
 
-            # --- T2 Rising Phoenix ---
-            ("T2", "Badminton", "Miheer Moghe"), ("T2", "Badminton", "Rakesh Shah"), ("T2", "Badminton", "Pujan Shah"), ("T2", "Badminton", "Rajesh Mansinghani"),
-            ("T2", "Bridge", "Deepak Mehta"), ("T2", "Bridge", "Raj Kailat"), ("T2", "Bridge", "Monica Advani"), ("T2", "Bridge", "Neha Mehta"),
-            ("T2", "Pickleball", "Parth Goyal"), ("T2", "Pickleball", "Sanjog Lunkad"),
-            ("T2", "Snooker", "Ninad Aolaskar"), ("T2", "Snooker", "Poras Shah"), ("T2", "Snooker", "Venkateswaran Subramanian"),
-            ("T2", "Squash", "Chiraag Shah"), ("T2", "Squash", "Krishna Rao"),
-            ("T2", "Swimming", "Riya Bawkar"), ("T2", "Swimming", "Sharvari R. Desai"), ("T2", "Swimming", "Pankaj Shah"),
-            ("T2", "TT", "Sushma Shah"), ("T2", "TT", "Ajit Gandhi"), ("T2", "TT", "Janak Thakkar"), ("T2", "TT", "Percy Patel"),
-            ("T2", "Tennis", "Anil Tahiliani"), ("T2", "Tennis", "Eshit Sheth"), ("T2", "Tennis", "Nanik Rupani"), ("T2", "Tennis", "Rajiv Kamdar"), ("T2", "Tennis", "Srinivasan Ganesan"),
-
-            # --- T3 Flying Phantoms ---
-            ("T3", "Badminton", "Jatin Karani"), ("T3", "Badminton", "Priyank Dedhia"), ("T3", "Badminton", "Purav Parekh"), ("T3", "Badminton", "S Rammohan Rao"),
-            ("T3", "Bridge", "Pankaj Tanna"), ("T3", "Bridge", "Viresh Kamdar"), ("T3", "Bridge", "Sunil Desai"), ("T3", "Bridge", "Yogeshwar Banavali"),
-            ("T3", "Pickleball", "Bhumika Shah"), ("T3", "Pickleball", "Chirag Kenia"),
-            ("T3", "Snooker", "Aditya Agarwal"), ("T3", "Snooker", "Amishi Chheda"), ("T3", "Snooker", "Mehrnosh Billimoria"),
-            ("T3", "Squash", "Raj Goshar"), ("T3", "Squash", "Rohan Vora"),
-            ("T3", "Swimming", "Hetanshi Kamdar"), ("T3", "Swimming", "Malvika Anand lyer"), ("T3", "Swimming", "Hasmukh Haria"),
-            ("T3", "TT", "Ira Naik"), ("T3", "TT", "Alok Shah"), ("T3", "TT", "Kartik Kumar raja"), ("T3", "TT", "Nagendra Prabhu"),
-            ("T3", "Tennis", "Harsh Gandhi"), ("T3", "Tennis", "Nishit Mehta"), ("T3", "Tennis", "Rohan Bawkar"), ("T3", "Tennis", "Sanjiv Shah"), ("T3", "Tennis", "Sarju Jhaveri"),
-
-            # --- T4 Royal Warriors ---
-            ("T4", "Badminton", "Ashwin Mulchandani"), ("T4", "Badminton", "Hormuzd Madan"), ("T4", "Badminton", "Jenil Gogri"), ("T4", "Badminton", "Rukshad Daruvala"),
-            ("T4", "Bridge", "Paras Savla"), ("T4", "Bridge", "Shruti Savla"), ("T4", "Bridge", "Ravindra Joglekar"), ("T4", "Bridge", "Sonali Sheth"),
-            ("T4", "Pickleball", "Jehan Mulchandani"), ("T4", "Pickleball", "Nimesh Kampani"),
-            ("T4", "Snooker", "Amit Thakkar"), ("T4", "Snooker", "Jatin N Sadarangani"), ("T4", "Snooker", "Vikram Chande"),
-            ("T4", "Squash", "Abhishek Samir Bhuta"), ("T4", "Squash", "Sumer Mehta"),
-            ("T4", "Swimming", "Aarthi Shetty"), ("T4", "Swimming", "Ruchi Shah"), ("T4", "Swimming", "Jai Dhanani"),
-            ("T4", "TT", "Natasha Sarkar"), ("T4", "TT", "Ajit Bodas"), ("T4", "TT", "Bhavik Visaria"), ("T4", "TT", "Pranav Parekh"),
-            ("T4", "Tennis", "Atul Parekh"), ("T4", "Tennis", "Christopher Lopes"), ("T4", "Tennis", "Dharmesh Hemani"), ("T4", "Tennis", "Rokshad Palkhivala"), ("T4", "Tennis", "Siddharth Chheda"),
-
-            # --- T5 Mighty Titans ---
-            ("T5", "Badminton", "Akshay Pawar"), ("T5", "Badminton", "Aman Dedhia"), ("T5", "Badminton", "Anshul Trivedi"), ("T5", "Badminton", "Kartik Mody"),
-            ("T5", "Bridge", "Rajesh Shah"), ("T5", "Bridge", "Dr. Medha Ambiye"), ("T5", "Bridge", "Mahendra G Ved"), ("T5", "Bridge", "Dinyar Wadia"),
-            ("T5", "Pickleball", "Pranav Rajguru"), ("T5", "Pickleball", "Shubh Gautam Pomani"),
-            ("T5", "Snooker", "Deepak S Sukhija"), ("T5", "Snooker", "Devendra Joshi"), ("T5", "Snooker", "Nishit Chandan"),
-            ("T5", "Squash", "Khushru Tampal"), ("T5", "Squash", "Param kiran Maru"),
-            ("T5", "Swimming", "Niyati S Kenia"), ("T5", "Swimming", "Sanyogita Aolaskar"), ("T5", "Swimming", "Shashank Bawkar"),
-            ("T5", "TT", "Sharmila Mauskar"), ("T5", "TT", "Paresh Ghatalia"), ("T5", "TT", "Rajesh Dave"), ("T5", "TT", "Raman lyer"),
-            ("T5", "Tennis", "Aditya Barve"), ("T5", "Tennis", "Kartik B Sheth"), ("T5", "Tennis", "Prasanna Shah"), ("T5", "Tennis", "Rajesh Kishnani"), ("T5", "Tennis", "Tej Mulchandani"),
-
-            # --- T6 Super Rangers ---
-            ("T6", "Badminton", "Aakash Parikh"), ("T6", "Badminton", "Palak shah"), ("T6", "Badminton", "Prashant Gada"), ("T6", "Badminton", "Suketu sheth"),
-            ("T6", "Bridge", "Priya Gupta"), ("T6", "Bridge", "Dr.Mita Doshi"), ("T6", "Bridge", "Meena Tanna"), ("T6", "Bridge", "Cyrus Dalal"),
-            ("T6", "Pickleball", "Chaitanya Rao"), ("T6", "Pickleball", "Deep Karani"),
-            ("T6", "Snooker", "Arun Agrawal"), ("T6", "Snooker", "Darshan Shah"), ("T6", "Snooker", "Naresh sadarangani"),
-            ("T6", "Squash", "Dev Sheth"), ("T6", "Squash", "Khush Gautam Pomani"),
-            ("T6", "Swimming", "Pooja Moghe"), ("T6", "Swimming", "Shikha kanakia"), ("T6", "Swimming", "Abhinav Chheda"),
-            ("T6", "TT", "Gauri Parulkar"), ("T6", "TT", "Kaushik Pithadia"), ("T6", "TT", "Sharukh Karkaria"), ("T6", "TT", "Vinit Gandhi"),
-            ("T6", "Tennis", "Cusrow Sadri"), ("T6", "Tennis", "Jvalant Sampat"), ("T6", "Tennis", "Mahesh Shah"), ("T6", "Tennis", "Pradip Bhat"), ("T6", "Tennis", "Umesh Ahuja"),
-        ]
-
-        player_count = 0
-        for t_code, s_label, p_name in full_roster_data:
-            team = team_objs.get(t_code)
-            if team:
-                Player.objects.get_or_create(name=p_name, team=team, sport_label=s_label)
-                player_count += 1
-
-        self.stdout.write(f"✅ {player_count} Players loaded with sport rosters")
-
-        # ======================================================
         # 4. SPORTS & EVENTS
-        # ======================================================
         event_map = {
             "Badminton": [(1, "Badminton Doubles Open 1"), (2, "Badminton Doubles Open 2")],
             "Bridge": [(3, "Bridge Open")],
@@ -138,11 +124,7 @@ class Command(BaseCommand):
             for eid, ename in events:
                 Event.objects.create(sport=sport, event_id=eid, name=ename)
 
-        self.stdout.write("✅ Sports & Events loaded")
-
-        # ======================================================
-        # 5. MATCH SCHEDULE
-        # ======================================================
+        # 5. FULL MATCH SCHEDULE
         def T(h, m): return time(hour=h, minute=m)
         D = date
         def E(s, eid): return Event.objects.get(sport__name=s, event_id=eid)
@@ -223,7 +205,7 @@ class Command(BaseCommand):
             ("Badminton", 2,11, "A&B", "F",   "Winners SF",   D(2026,1,13), T(11,20), "Court", "2"),
         ]
         # TENNIS
-        for eid, ename, court in [(15,"Singles Men","1"), (16,"Doubles Men 1","2"), (17,"Doubles Men 2","3")]:
+        for eid, court in [(15,"1"), (16,"2"), (17,"3")]:
             schedule += [
                 ("Tennis",eid,1,"A","RR","Rising Phoenix vs Flying Phantoms",D(2026,1,10),T(18,0), "Court", court),
                 ("Tennis",eid,2,"B","RR","Mighty Titans vs Super Rangers",D(2026,1,10),T(18,25), "Court", court),
@@ -238,30 +220,20 @@ class Command(BaseCommand):
                 ("Tennis",eid,11,"A&B","F","Winners of Semi Finals",D(2026,1,11),T(18,5), "Court", "3"),
             ]
         # SQUASH
-        schedule += [
-            ("Squash",7,1,"B","RR","Royal Warriors vs Super Rangers",D(2026,1,10),T(19,0),"Court","1"),
-            ("Squash",7,2,"A","RR","Golden Eagles vs Rising Phoenix",D(2026,1,10),T(19,20),"Court","1"),
-            ("Squash",7,3,"B","RR","Mighty Titans vs Royal Warriors",D(2026,1,10),T(19,40),"Court","1"),
-            ("Squash",7,4,"A","RR","Golden Eagles vs Flying Phantoms",D(2026,1,10),T(20,0),"Court","1"),
-            ("Squash",7,5,"B","RR","Mighty Titans vs Super Rangers",D(2026,1,10),T(20,20),"Court","1"),
-            ("Squash",7,6,"A","RR","Rising Phoenix vs Flying Phantoms",D(2026,1,10),T(20,40),"Court","1"),
-            ("Squash",7,7,"A&B","SF1","1st of Group A vs 2nd of Group B",D(2026,1,11),T(15,40),"Court","1"),
-            ("Squash",7,8,"A&B","SF2","1st of Group B vs 2nd of Group A",D(2026,1,11),T(15,40),"Court","2"),
-            ("Squash",7,9,"A&B","P56","3rd of Group A vs 3rd of Group B",D(2026,1,11),T(16,20),"Court","2"),
-            ("Squash",7,10,"A&B","P34","Loser of Semi Finals",D(2026,1,11),T(16,40),"Court","2"),
-            ("Squash",7,11,"A&B","F","Winners of Semi Finals",D(2026,1,11),T(17,0),"Court","2"),
-            ("Squash",8,1,"B","RR","Royal Warriors vs Super Rangers",D(2026,1,10),T(19,0),"Court","2"),
-            ("Squash",8,2,"A","RR","Golden Eagles vs Rising Phoenix",D(2026,1,10),T(19,20),"Court","2"),
-            ("Squash",8,3,"B","RR","Mighty Titans vs Royal Warriors",D(2026,1,10),T(19,40),"Court","2"),
-            ("Squash",8,4,"A","RR","Golden Eagles vs Flying Phantoms",D(2026,1,10),T(20,0),"Court","2"),
-            ("Squash",8,5,"B","RR","Mighty Titans vs Super Rangers",D(2026,1,10),T(20,20),"Court","2"),
-            ("Squash",8,6,"A","RR","Rising Phoenix vs Flying Phantoms",D(2026,1,10),T(20,40),"Court","2"),
-            ("Squash",8,7,"A&B","SF1","1st of Group A vs 2nd of Group B",D(2026,1,11),T(16,0),"Court","1"),
-            ("Squash",8,8,"A&B","SF2","1st of Group B vs 2nd of Group A",D(2026,1,11),T(16,0),"Court","2"),
-            ("Squash",8,9,"A&B","P56","3rd of Group A vs 3rd of Group B",D(2026,1,11),T(16,20),"Court","1"),
-            ("Squash",8,10,"A&B","P34","Loser of Semi Finals",D(2026,1,11),T(16,40),"Court","1"),
-            ("Squash",8,11,"A&B","F","Winners of Semi Finals",D(2026,1,11),T(17,0),"Court","1"),
-        ]
+        for eid, court in [(7,"1"), (8,"2")]:
+            schedule += [
+                ("Squash",eid,1,"B","RR","Royal Warriors vs Super Rangers",D(2026,1,10),T(19,0),"Court", court),
+                ("Squash",eid,2,"A","RR","Golden Eagles vs Rising Phoenix",D(2026,1,10),T(19,20),"Court", court),
+                ("Squash",eid,3,"B","RR","Mighty Titans vs Royal Warriors",D(2026,1,10),T(19,40),"Court", court),
+                ("Squash",eid,4,"A","RR","Golden Eagles vs Flying Phantoms",D(2026,1,10),T(20,0),"Court", court),
+                ("Squash",eid,5,"B","RR","Mighty Titans vs Super Rangers",D(2026,1,10),T(20,20),"Court", court),
+                ("Squash",eid,6,"A","RR","Rising Phoenix vs Flying Phantoms",D(2026,1,10),T(20,40),"Court", court),
+                ("Squash",eid,7,"A&B","SF1","1st of Group A vs 2nd of Group B",D(2026,1,11),T(15,40),"Court", court),
+                ("Squash",eid,8,"A&B","SF2","1st of Group B vs 2nd of Group A",D(2026,1,11),T(15,40),"Court", court),
+                ("Squash",eid,9,"A&B","P56","3rd of Group A vs 3rd of Group B",D(2026,1,11),T(16,20),"Court", court),
+                ("Squash",eid,10,"A&B","P34","Loser of Semi Finals",D(2026,1,11),T(16,40),"Court", court),
+                ("Squash",eid,11,"A&B","F","Winners of Semi Finals",D(2026,1,11),T(17,0),"Court", court),
+            ]
         # SWIMMING
         schedule += [
             ("Swimming",9,1,"A&B","F","All Teams (Finals)",D(2026,1,11),T(18,0),"Lane","1"),
@@ -269,7 +241,7 @@ class Command(BaseCommand):
             ("Swimming",11,1,"A&B","F","All Teams (Finals)",D(2026,1,11),T(18,10),"Lane","1"),
         ]
         # TABLE TENNIS
-        for eid, ename, t_table in [(12, "TT Doubles", "1"), (13, "TT Singles Men", "1"), (14, "TT Singles Women", "2")]:
+        for eid, t_table in [(12, "1"), (13, "1"), (14, "2")]:
             schedule += [
                 ("Table Tennis",eid,1,"A","RR","Golden Eagles vs Flying Phantoms",D(2026,1,10),T(17,0), "Table", t_table),
                 ("Table Tennis",eid,2,"B","RR","Mighty Titans vs Royal Warriors",D(2026,1,10),T(17,20),"Table", t_table),
@@ -284,87 +256,43 @@ class Command(BaseCommand):
                 ("Table Tennis",eid,11,"A&B","F","Winners of Semi Finals",D(2026,1,11),T(11,0),"Table", "2"),
             ]
 
-        # 6. CREATE MATCHES
-        match_objs = []
-        for sport, eid, no, grp, mtype, rule, d, tm, vtype, vno in schedule:
-            
-            # --- PARSE OPPONENTS FROM RULE ---
-            t1_obj = None
-            t2_obj = None
-            
+        # 6. CREATE MATCHES & ASSIGN VERIFIED PLAYERS
+        # Index Mapping for Events based on CSV rows
+        idx_map = {
+            1: 0, 2: 1, 3: 0, 4: 0, 5: 0, 6: 1, 7: 0, 8: 1,
+            9: 0, 10: 1, 11: 2, 12: 0, 13: 1, 14: 2, 15: 0, 16: 1, 17: 2
+        }
+
+        for sport_name, eid, no, grp, mtype, rule, d, tm, vtype, vno in schedule:
+            t1_obj, t2_obj = None, None
             clean_rule = rule.replace("\n", " ").strip()
-            
             if " vs " in clean_rule.lower():
                 parts = re.split(r'\s+[vV][sS]\s+', clean_rule)
                 if len(parts) >= 2:
-                    name1 = parts[0].strip().lower()
-                    name2 = parts[1].strip().lower()
-                    
-                    t1_obj = team_lookup.get(name1)
-                    t2_obj = team_lookup.get(name2)
+                    t1_obj = team_lookup.get(parts[0].strip().lower())
+                    t2_obj = team_lookup.get(parts[1].strip().lower())
 
             m = Match.objects.create(
-                event=E(sport, eid),
-                match_no=no,
-                group=grp,
-                match_type=mtype,
-                opponent_rule=rule,
-                team1=t1_obj,
-                team2=t2_obj,
-                date=d,
-                time=tm,
-                venue_type=vtype,
-                venue_no=vno,
+                event=E(sport_name, eid), match_no=no, group=grp, match_type=mtype,
+                opponent_rule=rule, team1=t1_obj, team2=t2_obj,
+                date=d, time=tm, venue_type=vtype, venue_no=vno,
             )
-            match_objs.append(m)
 
-        self.stdout.write(f"✅ {len(match_objs)} Matches Created.")
+            # ASSIGN OFFICIAL PAIRS
+            def get_players(team, s_name, event_id):
+                if not team or team.code not in official_pairs: return ""
+                key_s = "TT" if "table" in s_name.lower() else s_name
+                pairs_list = official_pairs[team.code].get(key_s, [])
+                if not pairs_list: return ""
+                idx = idx_map.get(event_id, 0)
+                return pairs_list[min(idx, len(pairs_list) - 1)]
 
-        # ======================================================
-        # 7. AUTO-ASSIGN PLAYERS
-        # ======================================================
-        self.stdout.write("🎲 Randomly assigning players to matches...")
-        
-        for m in match_objs:
-            if not m.team1 or not m.team2:
-                continue
-            
-            sport_name = m.event.sport.name.lower()
-            event_name = m.event.name.lower()
-            
-            if "double" in event_name or "bridge" in sport_name:
-                req_players = 2
-            else:
-                req_players = 1
-                
-            def pick_squad(team, s_name):
-                candidates = Player.objects.filter(team=team)
-                
-                if "table" in s_name or "tt" in s_name:
-                    candidates = candidates.filter(Q(sport_label__icontains="Table") | Q(sport_label__icontains="TT"))
-                elif "swimming" in s_name:
-                    candidates = candidates.filter(sport_label__icontains="Swimming")
-                else:
-                    candidates = candidates.filter(sport_label__icontains=s_name)
-                
-                pool_list = list(candidates)
-                if len(pool_list) >= req_players:
-                    chosen = random.sample(pool_list, req_players)
-                    return ", ".join([p.name for p in chosen])
-                elif pool_list:
-                    return ", ".join([p.name for p in pool_list]) 
-                return ""
-
-            m.team1_players = pick_squad(m.team1, sport_name)
-            m.team2_players = pick_squad(m.team2, sport_name)
+            if t1_obj: m.team1_players = get_players(t1_obj, sport_name, eid)
+            if t2_obj: m.team2_players = get_players(t2_obj, sport_name, eid)
             m.save()
 
-        # ======================================================
-        # 8. TRIGGER ENGINE LOGIC FOR LOADED DATA (THE FIX)
-        # ======================================================
-        self.stdout.write("⚙️ Force-triggering engine logic to unlock brackets...")
+        # 7. TRIGGER ENGINE
         for m in Match.objects.all():
-            # Manually trigger the post_save signal that engine.py listens to
             post_save.send(sender=Match, instance=m, created=False)
 
-        self.stdout.write(self.style.SUCCESS("🏆 MGCL Setup Complete. All logic verified!"))
+        self.stdout.write(self.style.SUCCESS("🏆 MGCL Setup Complete with Corrected Pairs!"))

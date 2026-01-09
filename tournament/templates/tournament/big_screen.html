@@ -2,401 +2,232 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>MGCL Live Display</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MGCL 2026 LIVE SCROLLING CENTER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        html { scroll-behavior: smooth; }
+        
+        body { 
+            background-color: #020617; 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            padding-bottom: 400px; 
+        }
 
-<style>
-/* TV MODE STYLES - DYNAMIC THEMING */
-:root {
-    /* DARK MODE (Default) */
-    --bg-color: #0f172a;
-    --header-bg: #1e3a8a;
-    --card-bg: #1e293b;
-    --text-main: #ffffff;
-    --text-muted: #94a3b8;
-    --accent: #3b82f6; 
-    --gold: #eab308;
-    --green: #22c55e;
-    --border: #334155;
-    --progress-bg: #1e293b;
-}
+        .tv-header { 
+            background: #1e3a8a; 
+            height: 80px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 40px; 
+            border-bottom: 5px solid #eab308; 
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
 
-body.light {
-    /* LIGHT MODE */
-    --bg-color: #f8fafc;
-    --header-bg: #2563eb;
-    --card-bg: #ffffff;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --accent: #1d4ed8;
-    --gold: #b45309;
-    --green: #15803d;
-    --border: #e2e8f0;
-    --progress-bg: #e2e8f0;
-}
+        .live-dot { height: 15px; width: 15px; background: #ff4d4d; border-radius: 50%; display: inline-block; margin-right: 12px; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
+        
+        .main-container { padding: 120px 30px 50px 30px; width: 100%; }
+        
+        .section-divider {
+            border-left: 8px solid #eab308;
+            padding: 10px 20px;
+            margin: 60px 0 30px 0;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #ffffff;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, rgba(30, 58, 138, 0.3) 0%, rgba(2, 6, 23, 0) 100%);
+        }
 
-body {
-    margin: 0;
-    padding: 0;
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    overflow: hidden; 
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    transition: background-color 0.5s ease, color 0.5s ease;
-}
+        /* FIX: Defined flex-row with overflow protection */
+        .match-card { 
+            background: rgba(30, 41, 59, 0.9); 
+            border-radius: 15px; 
+            border-left: 10px solid #3b82f6; 
+            margin-bottom: 25px; 
+            padding: 25px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: row; /* Horizontal alignment */
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden; /* Prevent data from bleeding out */
+        }
 
-/* TOP BAR */
-.tv-header {
-    background: var(--header-bg);
-    padding: 20px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    z-index: 100;
-    transition: background 0.5s ease;
-}
+        .match-info {
+            flex: 1; /* Occupy all available left space */
+            min-width: 0; /* Enable shrinking for long names */
+            padding-right: 20px;
+        }
+        
+        .badge-status { font-size: 0.85rem; padding: 4px 10px; border-radius: 5px; text-transform: uppercase; font-weight: 800; margin-bottom: 10px; display: inline-block; }
+        .bg-fin { background: #15803d; color: white; }
+        .bg-up { background: #b45309; color: white; }
+        
+        .matchup-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
+        .team-block {
+            flex: 1;
+            min-width: 0;
+        }
 
-.event-logo {
-    height: 55px;
-    width: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
-}
+        .team-name { 
+            font-size: 1.8rem; 
+            font-weight: 800; 
+            line-height: 1.1;
+            white-space: nowrap; /* Keep on one line */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Add ... for long team names */
+        }
 
-.tv-header h1 { margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; color: #ffffff; }
+        .winner-text { color: #eab308; text-shadow: 0 0 15px rgba(234,179,8,0.3); }
+        
+        .player-names {
+            font-size: 1rem;
+            color: #94a3b8;
+            font-weight: 500;
+            font-style: italic;
+            margin-top: 5px;
+            opacity: 0.8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Add ... for long player lists */
+        }
 
-.header-right {
-    display: flex;
-    align-items: center;
-    gap: 30px;
-}
+        .vs-text { opacity: 0.4; font-size: 1.2rem; font-weight: 900; flex-shrink: 0; }
+        
+        /* FIX: Sidebar with fixed width ensures Score/Time is ALWAYS visible */
+        .data-sidebar {
+            flex-shrink: 0;
+            width: 280px; /* Consistent room for results */
+            text-align: right;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding-left: 20px;
+        }
 
-.tv-clock { font-size: 24px; font-weight: 700; color: #ffffff; opacity: 0.9; }
-
-/* THEME TOGGLE ICON */
-.theme-btn {
-    background: transparent;
-    border: none;
-    font-size: 28px;
-    cursor: pointer;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.3s ease;
-}
-.theme-btn:hover { transform: scale(1.2) rotate(15deg); }
-
-/* ICON STYLING */
-.tv-team-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.tv-team-icon {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--accent);
-    background: rgba(255,255,255,0.05);
-}
-
-.tv-icon-placeholder {
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    background: var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    border: 2px dashed var(--text-muted);
-}
-
-/* SLIDES CONTAINER */
-.content-area {
-    flex: 1;
-    position: relative;
-    padding: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.slide {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0;
-    transform: scale(0.98);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-    padding: 40px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: none; 
-}
-
-.slide.active {
-    opacity: 1;
-    transform: scale(1);
-    pointer-events: auto;
-    z-index: 10;
-}
-
-.slide-title {
-    font-size: 42px;
-    font-weight: 900;
-    color: var(--accent);
-    margin-bottom: 40px;
-    text-transform: uppercase;
-    text-align: center;
-    border-bottom: 3px solid var(--border);
-    padding-bottom: 10px;
-    width: 100%;
-}
-
-table { width: 100%; border-collapse: separate; border-spacing: 0 15px; }
-th { text-align: left; opacity: 0.6; font-size: 20px; text-transform: uppercase; padding: 0 20px; color: var(--text-main); }
-td { background: var(--card-bg); padding: 15px 20px; font-size: 28px; font-weight: 600; border: 1px solid var(--border); vertical-align: middle; color: var(--text-main); transition: background 0.5s ease; }
-tr td:first-child { border-radius: 10px 0 0 10px; border-left: 5px solid var(--accent); }
-tr td:last-child { border-radius: 0 10px 10px 0; }
-
-.split-view { display: flex; gap: 40px; width: 100%; height: 100%; }
-.half { flex: 1; }
-
-.sport-badge { background: var(--border); color: var(--text-muted); font-size: 18px; padding: 5px 12px; border-radius: 6px; text-transform: uppercase; }
-.score { color: var(--gold); font-size: 36px; font-weight: 800; font-family: monospace; }
-.vs { color: var(--text-muted); margin: 0 15px; font-size: 20px; font-weight: 900; }
-
-.progress-container { height: 8px; background: var(--progress-bg); width: 100%; }
-.progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
-</style>
+        .score-box { font-size: 3.2rem; font-weight: 900; font-family: monospace; color: #eab308; line-height: 1; }
+        .time-box { font-size: 2.8rem; font-weight: 700; color: #3b82f6; line-height: 1; }
+        .event-details { font-size: 1rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    </style>
 </head>
-<body class="dark">
+<body>
 
-    <div class="tv-header">
-        <div class="header-left">
-            {% with first_m=upcoming.0|default:recent.0 %}
-                {% if first_m.event.logo %}
-                    <img src="{{ first_m.event.logo.url }}" class="event-logo" alt="Event Logo">
-                {% endif %}
-            {% endwith %}
-            <h1>MGCL Live Center</h1>
-        </div>
-        <div class="header-right">
-            <button class="theme-btn" onclick="toggleTheme()" id="theme-icon">🌗</button>
-            <a href="{% url 'logout' %}" style="text-decoration: none; font-size: 24px; margin-right: 10px;" title="Logout">🚪</a>
-            <div class="tv-clock" id="clock">{% now "H:i" %}</div>
+<div class="tv-header">
+    <div><span class="live-dot"></span><span style="font-size: 2rem; font-weight: 800; letter-spacing: 1px;">MGCL 2026 LIVE CENTER</span></div>
+    <div style="font-size: 2.2rem; font-weight: 700;" id="tv-clock">{% now "H:i" %}</div>
+</div>
+
+<div class="main-container">
+    
+    <div class="section-divider">Current Standings</div>
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <iframe src="/championship/view/" style="width:100%; height:850px; border:none; border-radius: 20px; background: #0f172a; box-shadow: 0 20px 50px rgba(0,0,0,0.5);"></iframe>
         </div>
     </div>
 
-    <div class="content-area">
+    {% for sport_name, matches in grouped_fixtures.items %}
+    <div class="section-divider">{{ sport_name }}</div>
+    <div class="row">
+        {% for m in matches %}
+        <div class="col-12">
+            <div class="match-card">
+                <div class="match-info">
+                    <span class="badge-status {% if m.completed %}bg-fin{% else %}bg-up{% endif %}">
+                        {% if m.completed %}FINISHED{% else %}UPCOMING{% endif %}
+                    </span>
+                    <div class="event-details">{{ m.event.name }}</div>
+                    
+                    <div class="matchup-container">
+                        <div class="team-block">
+                            <div class="team-name {% if m.winner == m.team1.name %}winner-text{% endif %}">
+                                {{ m.team1.name|default:m.opponent_rule }}
+                            </div>
+                            {% if m.team1_players %}
+                            <div class="player-names"><i class="fas fa-users me-1"></i> {{ m.team1_players }}</div>
+                            {% endif %}
+                        </div>
 
-        <div class="slide active" id="slide-1">
-            <div class="slide-title">Championship Standings</div>
-            <div class="split-view">
-                <div class="half">
-                    <h2 style="text-align:center; color: var(--text-muted);">GROUP A</h2>
-                    <table>
-                        <thead><tr><th>Rk</th><th>Team</th><th style="text-align:right;">Pts</th></tr></thead>
-                        <tbody>
-                            {% for s in standings_a %}
-                            <tr>
-                                <td style="width:60px; text-align:center;">{{ forloop.counter }}</td>
-                                <td>
-                                    <div class="tv-team-wrapper">
-                                        {% if s.team.icon %}
-                                            <img src="{{ s.team.icon.url }}" class="tv-team-icon">
-                                        {% else %}
-                                            <div class="tv-icon-placeholder">🛡️</div>
-                                        {% endif %}
-                                        <span>{{ s.team.name }}</span>
-                                    </div>
-                                </td>
-                                <td style="text-align:right; color:var(--gold);">{{ s.total_points }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                        <div class="vs-text">VS</div>
+
+                        <div class="team-block">
+                            <div class="team-name {% if m.winner == m.team2.name %}winner-text{% endif %}">
+                                {{ m.team2.name|default:"" }}
+                            </div>
+                            {% if m.team2_players %}
+                            <div class="player-names"><i class="fas fa-users me-1"></i> {{ m.team2_players }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div class="half">
-                    <h2 style="text-align:center; color: var(--text-muted);">GROUP B</h2>
-                    <table>
-                        <thead><tr><th>Rk</th><th>Team</th><th style="text-align:right;">Pts</th></tr></thead>
-                        <tbody>
-                            {% for s in standings_b %}
-                            <tr>
-                                <td style="width:60px; text-align:center;">{{ forloop.counter }}</td>
-                                <td>
-                                    <div class="tv-team-wrapper">
-                                        {% if s.team.icon %}
-                                            <img src="{{ s.team.icon.url }}" class="tv-team-icon">
-                                        {% else %}
-                                            <div class="tv-icon-placeholder">🛡️</div>
-                                        {% endif %}
-                                        <span>{{ s.team.name }}</span>
-                                    </div>
-                                </td>
-                                <td style="text-align:right; color:var(--gold);">{{ s.total_points }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+
+                <div class="data-sidebar">
+                    {% if m.completed %}
+                        <div class="score-box">
+                            {{ m.team1_score|default:"0" }} — {{ m.team2_score|default:"0" }}
+                        </div>
+                    {% else %}
+                        <div class="time-box">
+                            {{ m.time|time:"H:i" }}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-
-        <div class="slide" id="slide-2">
-            <div class="slide-title">Coming Up Next</div>
-            {% if upcoming %}
-            <table style="width: 90%;">
-                <thead><tr><th>Time</th><th>Sport</th><th>Matchup</th></tr></thead>
-                <tbody>
-                    {% for m in upcoming %}
-                    <tr>
-                        <td style="white-space: nowrap;">
-                            <span style="color: var(--gold); font-weight:700; margin-right:12px; font-size:26px;">
-                                {{ m.date|date:"M j" }}
-                            </span>
-                            <span style="color:var(--accent); font-weight:900; font-size:32px;">
-                                {{ m.time|time:"H:i" }}
-                            </span>
-                        </td>
-                        <td style="width:200px;"><span class="sport-badge">{{ m.event.sport.name }}</span></td>
-                        <td>
-                            <div class="tv-team-wrapper">
-                                {% if m.team1 %}
-                                    {% if m.team1.icon %}<img src="{{ m.team1.icon.url }}" class="tv-team-icon">{% endif %}
-                                    <span>{{ m.team1.name }}</span>
-                                {% else %}
-                                    <span style="opacity:0.5;">{{ m.opponent_rule }}</span>
-                                {% endif %}
-                                <span class="vs">VS</span>
-                                {% if m.team2 %}
-                                    {% if m.team2.icon %}<img src="{{ m.team2.icon.url }}" class="tv-team-icon">{% endif %}
-                                    <span>{{ m.team2.name }}</span>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% endif %}
-        </div>
-
-        <div class="slide" id="slide-3">
-            <div class="slide-title">Latest Results</div>
-            {% if recent %}
-            <table style="width: 95%;">
-                <thead><tr><th>Sport</th><th>Match</th><th style="text-align:right;">Result</th></tr></thead>
-                <tbody>
-                    {% for m in recent %}
-                    <tr>
-                        <td style="width:200px;"><span class="sport-badge">{{ m.event.sport.name }}</span></td>
-                        <td>
-                            <div class="tv-team-wrapper">
-                                {% if m.team1.icon %}<img src="{{ m.team1.icon.url }}" class="tv-team-icon">{% endif %}
-                                <span>{{ m.team1.name }}</span>
-                                <span class="vs">vs</span>
-                                <span>{{ m.team2.name }}</span>
-                                {% if m.team2.icon %}<img src="{{ m.team2.icon.url }}" class="tv-team-icon">{% endif %}
-                            </div>
-                        </td>
-                        <td style="text-align:right;">
-                            <span class="score">{{ m.team1_score }} - {{ m.team2_score }}</span>
-                            <div style="font-size:16px; color:var(--green); font-weight:900;">🏆 {{ m.winner }}</div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% endif %}
-        </div>
+        {% endfor %}
     </div>
-
-    <div class="progress-container">
-        <div class="progress-bar" id="progress"></div>
-    </div>
+    {% endfor %}
+</div>
 
 <script>
-    // CONFIG
-    const slideDuration = 10000;
-    const refreshInterval = 120000;
+    const scrollSpeed = 1; 
+    const intervalTime = 35; 
+    
+    function startAutoScroll() {
+        const totalHeight = document.documentElement.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        const maxScroll = totalHeight - viewportHeight;
 
-    let slides = document.querySelectorAll('.slide');
-    let currentSlide = 0;
-    let progressBar = document.getElementById('progress');
-    let progress = 0;
+        const scrollLoop = setInterval(() => {
+            const currentScroll = window.pageYOffset;
 
-    // THEME TOGGLE LOGIC
-    function toggleTheme() {
-        const body = document.body;
-        const icon = document.getElementById('theme-icon');
-        
-        if (body.classList.contains('dark')) {
-            body.classList.replace('dark', 'light');
-            localStorage.setItem("mgcl-tv-theme", "light");
-            icon.innerText = "☀️";
-        } else {
-            body.classList.replace('light', 'dark');
-            localStorage.setItem("mgcl-tv-theme", "dark");
-            icon.innerText = "🌗";
-        }
+            if (currentScroll < maxScroll - 30) {
+                window.scrollBy(0, scrollSpeed);
+            } else {
+                clearInterval(scrollLoop);
+                setTimeout(() => {
+                    location.reload(); 
+                }, 8000); 
+            }
+        }, intervalTime);
     }
 
-    // CLOCK
-    setInterval(() => {
+    function updateClock() {
         const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    }, 1000);
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + 
+                        now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('tv-clock').innerText = timeStr;
+    }
 
-    // SLIDE ROTATOR
-    setInterval(() => {
-        slides[currentSlide].classList.remove('active');
-        currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add('active');
-        progress = 0;
-    }, slideDuration);
-
-    // PROGRESS BAR
-    setInterval(() => {
-        progress += 100 / (slideDuration / 100); 
-        if (progress > 100) progress = 0;
-        progressBar.style.width = progress + "%";
-    }, 100);
-
-    // INIT
     window.onload = () => {
-        const savedTheme = localStorage.getItem("mgcl-tv-theme");
-        const icon = document.getElementById('theme-icon');
-        if (savedTheme === "light") {
-            document.body.classList.replace('dark', 'light');
-            icon.innerText = "☀️";
-        }
+        updateClock();
+        setInterval(updateClock, 1000);
+        setTimeout(startAutoScroll, 5000); 
     };
-
-    // AUTO REFRESH
-    setTimeout(() => {
-        location.reload();
-    }, refreshInterval);
 </script>
 
 </body>
