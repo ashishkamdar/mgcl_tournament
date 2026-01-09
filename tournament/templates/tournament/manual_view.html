@@ -22,15 +22,15 @@
         </div>
     </div>
 
-    <div class="table-responsive shadow-lg border border-secondary rounded">
-        <table class="table table-dark table-bordered table-sm align-middle mb-0 custom-table">
+    <div class="table-responsive shadow-lg border border-secondary rounded" style="overflow-x: hidden !important;">
+        <table class="table table-dark table-bordered table-sm align-middle mb-0" style="width: 100%; table-layout: auto;">
             <thead class="table-header-glass text-white">
                 <tr>
-                    <th class="id-col border-bottom-0 border-end border-secondary">ID</th>
-                    <th class="event-col border-bottom-0">Tournament Event</th>
+                    <th style="width: 40px; text-align: left !important;" class="ps-2 border-bottom-0 border-end border-secondary">ID</th>
+                    <th style="text-align: left !important; padding-left: 8px !important; font-size: 0.75rem;" class="border-bottom-0">Tournament Event</th>
                     
                     {% for team in teams %}
-                    <th colspan="2" class="team-header-cell border-start border-light-subtle p-0">
+                    <th colspan="2" class="border-start border-light-subtle p-0" style="height: 80px; text-align: center !important;">
                         <div class="d-flex align-items-center justify-content-center h-100">
                             <div class="flex-shrink-0">
                                 {% if team.name == "Golden Eagles" %}
@@ -46,7 +46,7 @@
                                 {% elif team.name == "Super Rangers" %}
                                     <img src="/media/team_icons/Super_Rangers-removebg-preview.png" class="header-logo">
                                 {% else %}
-                                    <i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 25px;"></i>
+                                    <i class="fas fa-shield-alt text-secondary opacity-50" style="font-size: 22px;"></i>
                                 {% endif %}
                             </div>
                             <div class="ms-1 text-start lh-1 fw-bold team-label">
@@ -60,16 +60,16 @@
                     <th class="border-top-0 border-end border-secondary"></th>
                     <th class="border-top-0"></th>
                     {% for team in teams %}
-                    <th class="border-start border-light-subtle py-1">P</th>
-                    <th class="py-1">Pts</th>
+                    <th class="border-start border-light-subtle py-1" style="text-align: center !important; font-size: 0.7rem;">P</th>
+                    <th class="py-1" style="text-align: center !important; font-size: 0.7rem;">Pts</th>
                     {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for res in results %}
-                <tr class="championship-row text-center">
-                    <td class="ps-2 text-info small fw-bold text-start border-end border-secondary">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-2 text-start text-nowrap">
+                <tr class="championship-row">
+                    <td class="ps-2 text-info small fw-bold border-end border-secondary" style="text-align: left !important;">{{ res.event_id }}</td>
+                    <td class="fw-bold ps-2 text-nowrap" style="text-align: left !important; font-size: 0.75rem; padding-right: 10px !important;">
                         {% if res.event_id == 1 %}Badminton (Singles) 1
                         {% elif res.event_id == 2 %}Badminton (Singles) 2
                         {% elif res.event_id == 3 %}Bridge
@@ -91,10 +91,10 @@
                     </td>
                     {% for team in teams %}
                     {% with team_data=res.results_data|get_item:team.code %}
-                    <td class="border-start border-secondary-subtle {% if team_data.pos == '1' %}bg-warning text-dark fw-bold shadow-inset{% elif team_data.pos == '2' %}bg-secondary text-white{% elif team_data.pos == '3' %}bg-danger text-white{% endif %}">
+                    <td class="border-start border-secondary-subtle {% if team_data.pos == '1' %}bg-warning text-dark fw-bold{% elif team_data.pos == '2' %}bg-secondary text-white{% elif team_data.pos == '3' %}bg-danger text-white{% endif %}" style="text-align: center !important; font-size: 0.75rem;">
                         {{ team_data.pos|default:"-" }}
                     </td>
-                    <td style="background: rgba(255,255,255,0.03);">
+                    <td style="background: rgba(255,255,255,0.03); text-align: center !important; font-size: 0.75rem;">
                         {{ team_data.pts|default:"0" }}
                     </td>
                     {% endwith %}
@@ -103,12 +103,12 @@
                 {% endfor %}
             </tbody>
             <tfoot class="table-footer-accent fw-bold border-top border-warning">
-                <tr class="text-warning text-center">
+                <tr class="text-warning">
                     <td class="border-0 border-end border-secondary"></td> 
-                    <td class="text-end pe-2 fs-6 border-0">TOTAL:</td> 
+                    <td class="pe-2 border-0" style="text-align: right !important; font-size: 0.8rem;">Total Points :</td> 
                     {% for team in teams %}
                     <td class="border-start border-warning-subtle"></td>
-                    <td style="text-shadow: 0 0 10px rgba(255,193,7,0.4);">
+                    <td style="text-shadow: 0 0 10px rgba(255,193,7,0.4); text-align: center !important; font-size: 0.85rem;">
                         {% if team_totals.items %}{{ team_totals|get_item:team.code }}{% else %}0{% endif %}
                     </td>
                     {% endfor %}
@@ -138,51 +138,18 @@
 </div>
 
 <style>
-    /* Fit to screen without horizontal scrollbar */
-    .table-responsive { 
-        width: 100%; 
-        overflow-x: hidden; 
-    }
-
-    .custom-table {
-        width: 100%;
-        table-layout: auto;
-        font-size: 0.8rem;
-    }
-
-    /* ONLY Left align ID and Event columns */
-    .id-col { width: 40px; text-align: left !important; }
-    .event-col { text-align: left !important; padding-left: 10px !important; }
-
-    /* Centering logic for everything else */
-    .team-header-cell { height: 85px; text-align: center !important; }
-    .championship-row td { text-align: center; }
-    .championship-row td:nth-child(1), 
-    .championship-row td:nth-child(2) { 
-        text-align: left !important; 
-    }
-
-    .header-logo { height: 35px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
-    .team-label { font-size: 0.65rem; color: white; display: inline-block; white-space: normal; line-height: 1.1; width: 70px; }
-    
+    .header-logo { height: 32px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+    .team-label { font-size: 0.62rem; color: white; display: inline-block; white-space: normal; line-height: 1; width: 65px; }
     .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%) !important; }
     .header-sub-row { background: rgba(0, 0, 0, 0.4); }
     .table-footer-accent { background: #020617 !important; border-top: 2px solid #fbbf24 !important; }
     .championship-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.04); }
     .championship-row:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.18); }
-    
-    .qr-container {
-        position: fixed; 
-        bottom: 20px; 
-        right: 20px; 
-        z-index: 1000;
-    }
+    .qr-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
 
-    /* Mobile specific tweaks to prevent squeezing without scroll */
-    @media (max-width: 768px) {
-        .custom-table { font-size: 0.7rem; }
-        .team-label { width: 55px; font-size: 0.55rem; }
-        .header-logo { height: 25px; }
+    /* Ensure no scrollbar is forced on large screens */
+    @media (min-width: 1200px) {
+        .custom-table { width: 100%; }
     }
 </style>
 {% endblock %}
