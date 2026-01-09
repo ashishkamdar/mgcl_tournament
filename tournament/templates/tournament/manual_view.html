@@ -22,12 +22,12 @@
         </div>
     </div>
 
-    <div class="table-responsive shadow-lg border border-secondary rounded" style="overflow-x: hidden !important;">
-        <table class="table table-dark table-bordered table-sm align-middle mb-0" style="width: 100%; table-layout: auto;">
+    <div class="table-responsive shadow-lg border border-secondary rounded" style="overflow-x: auto !important; -webkit-overflow-scrolling: touch; scrollbar-width: thin;">
+        <table class="table table-dark table-bordered table-sm align-middle mb-0" style="min-width: 900px; width: 100%; table-layout: fixed;">
             <thead class="table-header-glass text-white">
                 <tr>
-                    <th style="width: 40px; text-align: left !important;" class="ps-2 border-bottom-0 border-end border-secondary">ID</th>
-                    <th style="text-align: left !important; padding-left: 8px !important; font-size: 0.75rem;" class="border-bottom-0">Tournament Event</th>
+                    <th style="width: 45px; text-align: left !important;" class="ps-2 border-bottom-0 border-end border-secondary">ID</th>
+                    <th style="width: 180px; text-align: left !important; padding-left: 8px !important; font-size: 0.75rem;" class="border-bottom-0">Tournament Event</th>
                     
                     {% for team in teams %}
                     <th colspan="2" class="border-start border-light-subtle p-0" style="height: 95px; text-align: center !important;">
@@ -60,8 +60,8 @@
                     <th class="border-top-0 border-end border-secondary"></th>
                     <th class="border-top-0"></th>
                     {% for team in teams %}
-                    <th class="border-start border-light-subtle py-1" style="text-align: center !important; font-size: 0.7rem;">P</th>
-                    <th class="py-1" style="text-align: center !important; font-size: 0.7rem;">Pts</th>
+                    <th class="border-start border-light-subtle py-1" style="width: 40px; text-align: center !important; font-size: 0.7rem;">P</th>
+                    <th class="py-1" style="width: 60px; text-align: center !important; font-size: 0.7rem;">Pts</th>
                     {% endfor %}
                 </tr>
             </thead>
@@ -69,7 +69,7 @@
                 {% for res in results %}
                 <tr class="championship-row">
                     <td class="ps-2 text-info small fw-bold border-end border-secondary" style="text-align: left !important;">{{ res.event_id }}</td>
-                    <td class="fw-bold ps-2 text-nowrap" style="text-align: left !important; font-size: 0.75rem;">
+                    <td class="fw-bold ps-2 text-nowrap" style="text-align: left !important; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis;">
                         {% if res.event_id == 1 %}Badminton (Singles) 1
                         {% elif res.event_id == 2 %}Badminton (Singles) 2
                         {% elif res.event_id == 3 %}Bridge
@@ -138,11 +138,13 @@
 </div>
 
 <style>
-    /* Logo size increased from 32px to 45px */
+    /* Custom Scrollbar for a premium feel */
+    .table-responsive::-webkit-scrollbar { height: 8px; }
+    .table-responsive::-webkit-scrollbar-track { background: #020617; }
+    .table-responsive::-webkit-scrollbar-thumb { background: #1e40af; border-radius: 10px; }
+
     .header-logo { height: 45px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); transition: all 0.3s ease; }
-    
-    /* Team label adjusted for the larger logo */
-    .team-label { font-size: 0.62rem; color: white; display: inline-block; white-space: normal; line-height: 1; width: 75px; }
+    .team-label { font-size: 0.62rem; color: white; display: inline-block; white-space: normal; line-height: 1.1; width: 85px; text-align: center; }
     
     .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #0f172a 100%) !important; }
     .header-sub-row { background: rgba(0, 0, 0, 0.4); }
@@ -151,9 +153,9 @@
     .championship-row:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.18); }
     .qr-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
 
-    /* Maintain fit on large screens */
-    @media (min-width: 1200px) {
-        .table { width: 100%; }
+    /* For very large desktop screens, allow the table to fill the width naturally */
+    @media (min-width: 1400px) {
+        .table { min-width: 100% !important; }
     }
 </style>
-{% endblock %}
+{% endblock %}  
