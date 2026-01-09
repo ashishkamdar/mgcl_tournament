@@ -85,7 +85,11 @@ class Match(models.Model):
 
 class ChampionshipStanding(models.Model):
     team = models.OneToOneField(Team, on_delete=models.CASCADE)
+    gross_total = models.IntegerField(default=0)
     total_points = models.IntegerField(default=0)
+    penalty_points = models.IntegerField(default=0)
+    rank = models.IntegerField(default=0)
+    
     gold = models.IntegerField(default=0)
     silver = models.IntegerField(default=0)
     bronze = models.IntegerField(default=0)

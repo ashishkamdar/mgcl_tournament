@@ -54,23 +54,23 @@
                         <td class="col-event fw-bold ps-2 text-start">
                             <input type="hidden" name="event_id" value="{{ res.event_id }}">
                             <input type="hidden" name="event_name" value="{{ res.event_name }}">
-                            {% if res.event_id == 1 %}Badminton - Event 1
-                            {% elif res.event_id == 2 %}Badminton - Event 2
-                            {% elif res.event_id == 3 %}Bridge - Open
-                            {% elif res.event_id == 4 %}Pickleball - Doubles
-                            {% elif res.event_id == 5 %}Snooker - Singles
-                            {% elif res.event_id == 6 %}Snooker - Doubles
-                            {% elif res.event_id == 7 %}Squash - Singles 1
-                            {% elif res.event_id == 8 %}Squash - Singles 2
-                            {% elif res.event_id == 9 %}Swimming - Men FS
-                            {% elif res.event_id == 10 %}Swimming - Wmn FS 1
-                            {% elif res.event_id == 11 %}Swimming - Wmn FS 2
-                            {% elif res.event_id == 12 %}TT - Doubles Men
-                            {% elif res.event_id == 13 %}TT - Singles Men
-                            {% elif res.event_id == 14 %}TT - Singles Women
-                            {% elif res.event_id == 15 %}Tennis - Singles Men
-                            {% elif res.event_id == 16 %}Tennis - Doubles 1
-                            {% elif res.event_id == 17 %}Tennis - Doubles 2
+                            {% if res.event_id == 1 %}Badminton 1
+                            {% elif res.event_id == 2 %}Badminton 2
+                            {% elif res.event_id == 3 %}Bridge
+                            {% elif res.event_id == 4 %}Pickleball
+                            {% elif res.event_id == 5 %}Snooker (S)
+                            {% elif res.event_id == 6 %}Snooker (D)
+                            {% elif res.event_id == 7 %}Squash 1
+                            {% elif res.event_id == 8 %}Squash 2
+                            {% elif res.event_id == 9 %}Swimming (M)
+                            {% elif res.event_id == 10 %}Swimming (W1)
+                            {% elif res.event_id == 11 %}Swimming (W2)
+                            {% elif res.event_id == 12 %}TT (D)
+                            {% elif res.event_id == 13 %}TT (S)
+                            {% elif res.event_id == 14 %}TT (W)
+                            {% elif res.event_id == 15 %}Tennis (S)
+                            {% elif res.event_id == 16 %}Tennis (D1)
+                            {% elif res.event_id == 17 %}Tennis (D2)
                             {% else %}{{ res.event_name }}{% endif %}
                         </td>
                         {% for team in teams %}
@@ -79,7 +79,7 @@
                             <input type="text" name="pos_{{ team.code }}" value="{{ team_data.pos|default:'' }}" class="form-control form-control-sm bg-dark text-white text-center border-secondary entry-box" placeholder="P">
                         </td>
                         <td class="px-1" style="background: rgba(255,255,255,0.05);">
-                            <input type="number" name="pts_{{ team.code }}" value="{{ team_data.pts|default:0 }}" class="form-control form-control-sm bg-dark text-white text-center border-secondary entry-box" placeholder="0">
+                            <input type="number" name="pts_{{ team.code }}" data-team="{{ team.code }}" value="{{ team_data.pts|default:0 }}" class="form-control form-control-sm bg-dark text-white text-center border-secondary entry-box pts-input" placeholder="0">
                         </td>
                         {% endwith %}
                         {% endfor %}
@@ -87,15 +87,100 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            <tfoot class="table-footer-accent border-top border-warning">
+                <tr style="background: rgba(255, 255, 255, 0.03);">
+                    <td class="border-0"></td>
+                    <td class="pe-3 text-end border-0 text-white-50" style="font-size: 0.75rem;">GROSS TOTAL POINTS:</td>
+                    {% for team in teams %}
+                    {% with st=standings_map|get_item:team.code %}
+                    <td class="border-start border-secondary-subtle"></td>
+                    <td class="text-center text-white-50" id="gross-{{ team.code }}" style="font-size: 0.85rem;">
+                        {{ st.gross_total|default:0 }}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                </tr>
+
+                <tr class="entry-row">
+                    <form class="ajax-save-form" method="POST" action="{% url 'manual_leaderboard_entry' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="event_id" value="penalty">
+                        <td class="col-id ps-2 text-danger fw-bold text-start">-</td>
+                        <td class="col-event pe-3 text-end text-danger fw-bold" style="font-size: 0.75rem;">LESS : PENALTY POINTS</td>
+                        {% for team in teams %}
+                        {% with st=standings_map|get_item:team.code %}
+                        <td class="border-start border-secondary-subtle"></td>
+                        <td class="px-1" style="background: rgba(220, 53, 69, 0.15);">
+                            <input type="number" name="penalty_{{ team.code }}" data-team="{{ team.code }}" value="{{ st.penalty_points|default:0 }}" class="form-control form-control-sm bg-dark text-danger text-center border-danger entry-box penalty-input" placeholder="0">
+                        </td>
+                        {% endwith %}
+                        {% endfor %}
+                    </form>
+                </tr>
+
+                <tr class="text-warning fw-bold" style="background: rgba(255, 193, 7, 0.05);">
+                    <td class="border-0"></td>
+                    <td class="pe-3 text-end border-0" style="font-size: 0.85rem; letter-spacing: 1px;">FINAL STANDING POINTS:</td>
+                    {% for team in teams %}
+                    {% with st=standings_map|get_item:team.code %}
+                    <td class="border-start border-secondary-subtle"></td>
+                    <td class="text-center" id="net-{{ team.code }}" style="font-size: 1rem; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255,193,7,0.2); text-shadow: 0 0 10px rgba(255,193,7,0.3);">
+                        {{ st.total_points|default:0 }}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                </tr>
+
+                <tr class="fw-bold" style="background: linear-gradient(90deg, rgba(30, 64, 175, 0.2) 0%, rgba(2, 6, 23, 1) 100%);">
+                    <td class="border-0"></td>
+                    <td class="pe-3 text-end border-0 text-info" style="font-size: 0.85rem; letter-spacing: 1px;">FINAL TEAM POSITION:</td>
+                    {% for team in teams %}
+                    {% with st=standings_map|get_item:team.code %}
+                    <td class="border-start border-info-subtle"></td>
+                    <td class="text-center text-info" id="rank-{{ team.code }}" style="font-size: 1.1rem; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);">
+                        #{{ st.rank|default:"-" }}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                </tr>
+            </tfoot>
         </table>
     </div>
 </div>
 
 <script>
+function runCalculations() {
+    const teamCodes = [{% for team in teams %}"{{ team.code }}",{% endfor %}];
+    let currentStandings = [];
+
+    teamCodes.forEach(code => {
+        let grossTotal = 0;
+        document.querySelectorAll(`.pts-input[data-team="${code}"]`).forEach(input => {
+            grossTotal += parseInt(input.value) || 0;
+        });
+
+        const penaltyInput = document.querySelector(`.penalty-input[data-team="${code}"]`);
+        const penaltyPoints = parseInt(penaltyInput.value) || 0;
+        const netTotal = grossTotal - penaltyPoints;
+
+        document.getElementById(`gross-${code}`).innerText = grossTotal;
+        document.getElementById(`net-${code}`).innerText = netTotal;
+        currentStandings.push({ code: code, total: netTotal });
+    });
+
+    currentStandings.sort((a, b) => b.total - a.total);
+    currentStandings.forEach((standing, index) => {
+        document.getElementById(`rank-${standing.code}`).innerText = "#" + (index + 1);
+    });
+}
+
+document.querySelectorAll('.pts-input, .penalty-input').forEach(input => {
+    input.addEventListener('input', runCalculations);
+});
+
 document.getElementById('saveAllBtn').addEventListener('click', async function() {
     const btn = this;
     const forms = Array.from(document.querySelectorAll('.ajax-save-form'));
-    
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> SAVING...';
 
@@ -106,25 +191,25 @@ document.getElementById('saveAllBtn').addEventListener('click', async function()
                 body: new FormData(form),
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-        } catch (err) {
-            console.error("Save failed:", err);
-        }
+        } catch (err) { console.error("Save failed:", err); }
     }
-
-    // Reset button to normal state
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-save me-1"></i> SAVE ALL';
+    location.reload();
 });
 </script>
 
 <style>
     .force-center th, .force-center td { text-align: center !important; }
-    .force-center .col-id, .force-center .col-event, .force-center td:nth-child(1), .force-center td:nth-child(2) { text-align: left !important; }
+    .force-center .col-id, .force-center .col-event { text-align: left !important; }
     .header-logo { height: 35px; width: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
-    .team-label { font-size: 0.65rem; color: white; font-weight: 800; display: inline-block; white-space: normal; word-spacing: 100vw; width: 65px; }
-    .entry-box { font-size: 0.8rem; padding: 2px 1px !important; width: 38px !important; border-radius: 2px; height: 26px; }
+    .team-label { font-size: 0.65rem; color: white; font-weight: 800; display: inline-block; white-space: normal; line-height: 1.1; width: 65px; }
+    .entry-box { font-size: 0.8rem; padding: 2px 1px !important; width: 42px !important; border-radius: 2px; height: 26px; }
     .table-header-glass { background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%) !important; }
     .header-sub-row { background: rgba(0, 0, 0, 0.3); }
     .entry-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.03); }
+    .table-footer-accent { background: #020617 !important; border-top: 2px solid #fbbf24 !important; }
+    .text-danger { color: #ff4d4d !important; }
+    .border-danger { border-color: #ff4d4d !important; }
+    .border-info-subtle { border-color: rgba(0, 255, 255, 0.3) !important; }
+    .text-info { color: #0dcaf0 !important; }
 </style>
 {% endblock %}

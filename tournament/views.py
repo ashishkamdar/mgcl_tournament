@@ -263,51 +263,112 @@ def swimming_score_entry(request, match):
     return render(request, "tournament/swimming_score_entry.html", {"match": match, "teams": all_teams, "existing": SwimmingResult.objects.filter(event=match.event).first()})
 
 
+# @login_required
+# def manual_leaderboard_entry(request):
+#     """Beautiful data entry screen for manual points."""
+#     if not request.user.is_staff:
+#         raise PermissionDenied()
+
+#     teams = Team.objects.all().order_by('code')
+#     # Generate 1-17 if they don't exist
+#     for i in range(1, 18):
+#         ManualEventResult.objects.get_or_create(event_id=i, defaults={"event_name": f"Event {i}"})
+    
+#     if request.method == "POST":
+#         event_id = request.POST.get("event_id")
+#         result_obj = get_object_or_404(ManualEventResult, event_id=event_id)
+        
+#         new_data = {}
+#         for team in teams:
+#             pos = request.POST.get(f"pos_{team.code}")
+#             pts = request.POST.get(f"pts_{team.code}")
+#             new_data[team.code] = {"pos": pos, "pts": pts or 0}
+        
+#         result_obj.results_data = new_data
+#         result_obj.save()
+#         return JsonResponse({"status": "success"})
+
+#     results = ManualEventResult.objects.all()
+#     return render(request, "tournament/manual_entry.html", {"teams": teams, "results": results})
+
+from django.db import transaction
+
 @login_required
 def manual_leaderboard_entry(request):
-    """Beautiful data entry screen for manual points."""
     if not request.user.is_staff:
         raise PermissionDenied()
 
     teams = Team.objects.all().order_by('code')
-    # Generate 1-17 if they don't exist
-    for i in range(1, 18):
-        ManualEventResult.objects.get_or_create(event_id=i, defaults={"event_name": f"Event {i}"})
     
     if request.method == "POST":
         event_id = request.POST.get("event_id")
-        result_obj = get_object_or_404(ManualEventResult, event_id=event_id)
         
-        new_data = {}
+        # --- Handle Penalty Saving ---
+        if event_id == "penalty":
+            for team in teams:
+                val = request.POST.get(f"penalty_{team.code}")
+                standing, _ = ChampionshipStanding.objects.get_or_create(team=team)
+                standing.penalty_points = int(val) if val else 0
+                standing.total_points = standing.gross_total - standing.penalty_points
+                standing.save()
+        
+        # --- Handle Event Saving ---
+        else:
+            result_obj = get_object_or_404(ManualEventResult, event_id=event_id)
+            new_data = {t.code: {"pos": request.POST.get(f"pos_{t.code}"), 
+                                 "pts": int(request.POST.get(f"pts_{t.code}") or 0)} for t in teams}
+            result_obj.results_data = new_data
+            result_obj.save()
+
+        # --- Recalculate Totals & Ranks for Persistence ---
+        all_results = ManualEventResult.objects.all()
+        standings_to_rank = []
+        
         for team in teams:
-            pos = request.POST.get(f"pos_{team.code}")
-            pts = request.POST.get(f"pts_{team.code}")
-            new_data[team.code] = {"pos": pos, "pts": pts or 0}
+            gross = sum(int(r.results_data.get(team.code, {}).get('pts', 0)) for r in all_results)
+            standing, _ = ChampionshipStanding.objects.get_or_create(team=team)
+            standing.gross_total = gross
+            standing.total_points = standing.gross_total - standing.penalty_points
+            standing.save()
+            standings_to_rank.append(standing)
         
-        result_obj.results_data = new_data
-        result_obj.save()
+        # Auto-Ranking Logic
+        standings_to_rank.sort(key=lambda x: x.total_points, reverse=True)
+        for index, s in enumerate(standings_to_rank):
+            s.rank = index + 1
+            s.save()
+
         return JsonResponse({"status": "success"})
 
+    # --- Page Load Logic ---
     results = ManualEventResult.objects.all()
-    return render(request, "tournament/manual_entry.html", {"teams": teams, "results": results})
+    standings_map = {}
+    for team in teams:
+        # Safety check: ensure every team has a map entry
+        s, _ = ChampionshipStanding.objects.get_or_create(team=team)
+        standings_map[team.code] = s
+
+    return render(request, "tournament/manual_entry.html", {
+        "teams": teams, 
+        "results": results, 
+        "standings_map": standings_map
+    })
 
 from django.views.decorators.cache import cache_page
 # REMOVED @login_required to make this public
 @cache_page(30) # Cache the standings for 30 seconds
 def manual_championship_view(request):
-    """The final beautiful read-only table accessible to everyone."""
     teams = Team.objects.all().order_by('code')
     results = ManualEventResult.objects.all()
     
-    team_totals = {t.code: 0 for t in teams}
-    for r in results:
-        for t_code, data in r.results_data.items():
-            pts = data.get('pts', 0)
-            if pts:
-                team_totals[t_code] += int(pts)
+    # Critical: Create the map for the template to access Gross/Penalty/Rank
+    standings_map = {}
+    for team in teams:
+        standing, _ = ChampionshipStanding.objects.get_or_create(team=team)
+        standings_map[team.code] = standing
 
     return render(request, "tournament/manual_view.html", {
         "teams": teams, 
         "results": results,
-        "team_totals": team_totals
+        "standings_map": standings_map
     })

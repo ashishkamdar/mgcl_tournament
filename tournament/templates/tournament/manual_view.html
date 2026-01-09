@@ -103,14 +103,51 @@
                 {% endfor %}
             </tbody>
             <tfoot class="table-footer-accent fw-bold border-top border-warning">
+                <tr style="background: rgba(255, 255, 255, 0.03);">
+                    <td class="border-0 border-end border-secondary"></td>
+                    <td class="pe-3 text-end border-0 text-white-50" style="font-size: 0.75rem;">GROSS TOTAL POINTS:</td>
+                    {% for team in teams %}
+                    {% with st=standings_map|get_item:team.code %}
+                    <td colspan="2" class="border-start border-secondary-subtle" style="text-align: center !important; font-size: 0.8rem; color: rgba(255,255,255,0.5);">
+                        {{ st.gross_total|default:0 }}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                </tr>
+
+                <tr style="background: rgba(220, 53, 69, 0.05);">
+                    <td class="border-0 border-end border-secondary"></td>
+                    <td class="pe-3 text-end border-0 text-danger" style="font-size: 0.75rem;">LESS : PENALTY POINTS:</td>
+                    {% for team in teams %}
+                    {% with st=standings_map|get_item:team.code %}
+                    <td colspan="2" class="border-start border-secondary-subtle" style="text-align: center !important; font-size: 0.8rem; color: #ff4d4d !important;">
+                        {{ st.penalty_points|default:0 }}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                </tr>
+
                 <tr class="text-warning">
                     <td class="border-0 border-end border-secondary"></td> 
-                    <td class="pe-2 border-0" style="text-align: right !important; font-size: 0.8rem;">Total Points :</td> 
+                    <td class="pe-3 text-end border-0" style="font-size: 0.8rem;">FINAL STANDING POINTS :</td> 
                     {% for team in teams %}
-                    <td class="border-start border-warning-subtle"></td>
-                    <td style="text-shadow: 0 0 10px rgba(255,193,7,0.4); text-align: center !important; font-size: 0.85rem;">
-                        {% if team_totals.items %}{{ team_totals|get_item:team.code }}{% else %}0{% endif %}
+                    {% with st=standings_map|get_item:team.code %}
+                    <td colspan="2" class="border-start border-warning-subtle" style="text-align: center !important; text-shadow: 0 0 10px rgba(255,193,7,0.4); font-size: 0.95rem;">
+                        {{ st.total_points|default:0 }}
                     </td>
+                    {% endwith %}
+                    {% endfor %}
+                </tr>
+
+                <tr style="background: linear-gradient(90deg, #1e3a8a 0%, #020617 100%);">
+                    <td class="border-0 border-end border-secondary"></td>
+                    <td class="pe-3 text-end border-0 text-info" style="font-size: 0.85rem; letter-spacing: 1px;">FINAL TEAM POSITION:</td>
+                    {% for team in teams %}
+                    {% with st=standings_map|get_item:team.code %}
+                    <td colspan="2" class="border-start border-info-subtle" style="text-align: center !important; font-size: 1.25rem; color: #0dcaf0 !important; text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);">
+                        #{{ st.rank|default:"-" }}
+                    </td>
+                    {% endwith %}
                     {% endfor %}
                 </tr>
             </tfoot>
@@ -138,7 +175,6 @@
 </div>
 
 <style>
-    /* Custom Scrollbar for a premium feel */
     .table-responsive::-webkit-scrollbar { height: 8px; }
     .table-responsive::-webkit-scrollbar-track { background: #020617; }
     .table-responsive::-webkit-scrollbar-thumb { background: #1e40af; border-radius: 10px; }
@@ -152,10 +188,12 @@
     .championship-row:nth-of-type(even) { background-color: rgba(255, 255, 255, 0.04); }
     .championship-row:nth-of-type(odd) { background-color: rgba(0, 0, 0, 0.18); }
     .qr-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+    
+    .text-danger { color: #ff4d4d !important; }
+    .border-info-subtle { border-color: rgba(0, 255, 255, 0.3) !important; }
 
-    /* For very large desktop screens, allow the table to fill the width naturally */
     @media (min-width: 1400px) {
         .table { min-width: 100% !important; }
     }
 </style>
-{% endblock %}  
+{% endblock %}
